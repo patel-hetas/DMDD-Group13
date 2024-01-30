@@ -3,7 +3,7 @@
 ## Accessing the Documents
 The documents in this repository are publicly accessible and can be viewed directly on GitHub. Below is a list of the project documents along with their direct links for easy access.
 
-## Topic - `Movie Ticket Reservation`
+## P1 Topic - `Movie Ticket Reservation`
 
 ### Project Documents
 - **Github Repository**
