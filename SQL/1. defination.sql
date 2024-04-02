@@ -36,3 +36,121 @@ CREATE TABLE users_clerks (
 );
 
 
+--- 2. About Movies
+DROP TABLE IF EXISTS movies;
+CREATE TABLE movies (
+    movie_id INT PRIMARY KEY IDENTITY(1,1),
+    movie_name VARCHAR(255) NOT NULL,
+    duration INT NOT NULL, -- in minutes
+    age_rating VARCHAR(10) NOT NULL CONSTRAINT age_rating_ck CHECK (age_rating IN ('G', 'PG', 'PG-13', 'R', 'NC-17'))
+);
+
+--- 2.1 About Actors
+DROP TABLE IF EXISTS actors;
+CREATE TABLE actors (
+    actor_id INT PRIMARY KEY IDENTITY(1,1),
+    actor_name VARCHAR(255) NOT NULL,
+    bio TEXT
+);
+
+DROP TABLE IF EXISTS movies_actors;
+CREATE TABLE movies_actors (
+    movie_id INT FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
+    actor_id INT FOREIGN KEY (actor_id) REFERENCES actors(actor_id),
+    PRIMARY KEY (movie_id, actor_id)
+);
+
+--- 2.2 About Genres
+DROP TABLE IF EXISTS genres;
+CREATE TABLE genres (
+    genre_id INT PRIMARY KEY IDENTITY(1,1),
+    genre_name VARCHAR(255) NOT NULL
+);
+
+DROP TABLE IF EXISTS movies_genres;
+CREATE TABLE movies_genres (
+    movie_id INT FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
+    genre_id INT FOREIGN KEY (genre_id) REFERENCES genres(genre_id),
+    PRIMARY KEY (movie_id, genre_id)
+);
+
+--- 3. About Studios
+DROP TABLE IF EXISTS studios;
+CREATE TABLE studios (
+    studio_id INT PRIMARY KEY IDENTITY(1,1),
+    studio_name VARCHAR(255) NOT NULL,
+    screen_type VARCHAR(255) NOT NULL CONSTRAINT screen_type_ck CHECK (screen_type IN ('2D', '3D', '4D')),
+);
+
+--- 3.1 About Seats
+DROP TABLE IF EXISTS seats;
+CREATE TABLE seats (
+    seat_id INT PRIMARY KEY IDENTITY(1,1),
+    studio_id INT FOREIGN KEY (studio_id) REFERENCES studios(studio_id),
+    seat_row INT NOT NULL,
+    seat_column INT NOT NULL,
+);
+
+
+--- 4. About Transactions
+DROP TABLE IF EXISTS transactions;
+CREATE TABLE transactions (
+    payment_id INT PRIMARY KEY IDENTITY(1,1),
+    user_id INT FOREIGN KEY (user_id) REFERENCES users(id),
+    amount FLOAT NOT NULL,
+    payment_method VARCHAR(255) NOT NULL CONSTRAINT payment_method_ck CHECK (payment_method IN ('Credit Card', 'Debit Card', 'Cash')),
+    payment_time DATETIME NOT NULL DEFAULT GETDATE()
+);
+
+--- 5. About Schedules and Tickets
+DROP TABLE IF EXISTS schedules;
+CREATE TABLE schedules (
+    schedule_id INT PRIMARY KEY IDENTITY(1,1),
+    movie_id INT FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
+    studio_id INT FOREIGN KEY (studio_id) REFERENCES studios(studio_id),
+    start_time DATETIME NOT NULL,
+    end_time DATETIME NOT NULL,
+    price FLOAT NOT NULL,
+);
+
+DROP TABLE IF EXISTS tickets;
+CREATE TABLE tickets (
+    ticket_id INT PRIMARY KEY IDENTITY(1,1),
+    schedule_id INT FOREIGN KEY (schedule_id) REFERENCES schedules(schedule_id),
+    seat_id INT FOREIGN KEY (seat_id) REFERENCES seats(seat_id),
+    customer_id INT FOREIGN KEY (customer_id) REFERENCES users_customers(customer_id),
+    ticket_status VARCHAR(255) NOT NULL CONSTRAINT ticket_status_ck CHECK (ticket_status IN ('Booked', 'Cancelled', 'Available')),
+    payment_id INT FOREIGN KEY (payment_id) REFERENCES transactions(payment_id),
+);
+
+
+--- 6. About Customer's Special Functionalities
+DROP TABLE IF EXISTS customer_feedbacks;
+CREATE TABLE customer_feedbacks (
+    id INT PRIMARY KEY IDENTITY(1,1),
+    customer_id INT FOREIGN KEY (customer_id) REFERENCES users_customers(customer_id),
+    comment VARCHAR(255) NOT NULL,
+    dateAndTime DATETIME NOT NULL
+);
+
+DROP TABLE IF EXISTS customer_MovieReviews;
+CREATE TABLE customer_MovieReviews (
+    id INT PRIMARY KEY IDENTITY(1,1),
+    customer_id INT FOREIGN KEY (customer_id) REFERENCES users_customers(customer_id),
+    movie_id INT FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
+    rating INT NOT NULL CONSTRAINT rating_ck CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    dateAndTime DATETIME NOT NULL
+);
+
+--- 7. About Manager's Special Functionalities
+DROP TABLE IF EXISTS events;
+CREATE TABLE events (
+    event_id INT PRIMARY KEY IDENTITY(1,1),
+    event_name VARCHAR(255) NOT NULL,
+    event_description TEXT,
+    event_start_time DATETIME NOT NULL,
+    event_end_time DATETIME NOT NULL,
+    event_revenue FLOAT NOT NULL,
+    manager_id INT FOREIGN KEY (manager_id) REFERENCES users_managers(manager_id)
+);
