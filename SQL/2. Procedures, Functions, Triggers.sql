@@ -29,8 +29,6 @@ END;
 GO
 
 --- 1. About Users
-OPEN SYMMETRIC KEY UserPasswordKey DECRYPTION BY CERTIFICATE UserPasswordCertificate;
-
 DROP PROCEDURE IF EXISTS sp_createUser; 
 GO
 CREATE PROCEDURE sp_createUser -- Create User with given role
@@ -50,11 +48,13 @@ BEGIN
     END
 
     DECLARE @password_encrypted VARBINARY;
+    OPEN SYMMETRIC KEY UserPasswordKey DECRYPTION BY CERTIFICATE UserPasswordCertificate;
     SET @password_encrypted = dbo.fn_getEncryptedPassword(@password_not_encrypted);
 
     INSERT INTO users (username, displayName, password_encrypted, phone, [role])
     VALUES (@username, @displayName, @password_encrypted, @phone, @role);
 END;
+GO
 
 DROP PROCEDURE IF EXISTS sp_createUser_manager;
 GO
@@ -74,6 +74,7 @@ BEGIN
     INSERT INTO users_managers (manager_id, salary, dateOfEmployment)
     VALUES (@user_id, @salary, @dateOfEmployment);
 END;
+GO
 
 DROP PROCEDURE IF EXISTS sp_createUser_clerk;
 GO
@@ -94,6 +95,7 @@ BEGIN
     INSERT INTO users_clerks (customer_id, dateOfEmployment, salary, answersToManagerID)
     VALUES (@user_id, @dateOfEmployment, @salary, @answersToManagerID);
 END;
+GO
 
 DROP PROCEDURE IF EXISTS sp_createUser_customer;
 GO
@@ -111,4 +113,5 @@ BEGIN
     INSERT INTO users_customers (customer_id)
     VALUES (@user_id);
 END;
+GO
 
