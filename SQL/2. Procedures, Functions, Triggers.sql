@@ -29,6 +29,7 @@ END;
 GO
 
 --- 1. About Users
+--- 1.1. Create User
 DROP PROCEDURE IF EXISTS sp_createUser; 
 GO
 CREATE PROCEDURE sp_createUser -- Create User with given role
@@ -114,4 +115,3 @@ BEGIN
     VALUES (@user_id);
 END;
 GO
-
