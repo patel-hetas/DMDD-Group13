@@ -3,13 +3,39 @@ CREATE DATABASE ttms;
 USE ttms;
 GO
 
+--- 0. About Encryption
+IF EXISTS (
+    SELECT name KeyName,
+    symmetric_key_id KeyID,
+    key_length KeyLength,
+    algorithm_desc KeyAlgorithm
+    FROM sys.symmetric_keys
+)
+BEGIN
+    DROP SYMMETRIC KEY UserPasswordKey;
+    DROP CERTIFICATE UserPasswordCertificate;
+    DROP MASTER KEY;
+END
+
+CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'v%c*S_%&1CLH%$Srr-FvQ6cCN~>hVh_Jp0VKaSnc7/lWeBz{V,[>IRNMj*]kPFMH';
+
+ 
+CREATE CERTIFICATE UserPasswordCertificate
+    WITH SUBJECT = 'User Passwords For TTMS';
+GO
+
+CREATE SYMMETRIC KEY UserPasswordKey
+    WITH ALGORITHM = AES_256
+    ENCRYPTION BY CERTIFICATE UserPasswordCertificate;
+GO
+
 --- 1. About Users
 
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
     id INT PRIMARY KEY IDENTITY(1,1),
     username VARCHAR(50) NOT NULL,
-    password VARCHAR(50) NOT NULL,
+    password_encrypted VARCHAR(50) NOT NULL,
     phone VARCHAR(15) NOT NULL,
     role VARCHAR(255) NOT NULL CONSTRAINT role_ck CHECK (role IN ('Customer', 'Clerk', 'Manager'))
 );
