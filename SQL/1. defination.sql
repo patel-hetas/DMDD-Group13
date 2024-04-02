@@ -1,5 +1,8 @@
+USE master;
 DROP DATABASE IF EXISTS ttms;
+GO
 CREATE DATABASE ttms;
+GO
 USE ttms;
 GO
 
@@ -34,21 +37,25 @@ GO
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
     id INT PRIMARY KEY IDENTITY(1,1),
-    username VARCHAR(50) NOT NULL,
-    password_encrypted VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    displayName VARCHAR(50) NOT NULL,
+    password_encrypted VARBINARY NOT NULL,
     phone VARCHAR(15) NOT NULL,
-    role VARCHAR(255) NOT NULL CONSTRAINT role_ck CHECK (role IN ('Customer', 'Clerk', 'Manager'))
+    [role] VARCHAR(25) NOT NULL CONSTRAINT role_ck CHECK (role IN ('Customer', 'Clerk', 'Manager')),
+    isActivated BIT NOT NULL DEFAULT 1 -- 0: not activated, 1: activated
 );
 
 DROP TABLE IF EXISTS users_customers;
 CREATE TABLE users_customers (
     customer_id INT PRIMARY KEY FOREIGN KEY (customer_id) REFERENCES users(id),
     isVIP BIT NOT NULL DEFAULT 0, -- 0: not VIP, 1: VIP
+    dateOfMembership DATE NOT NULL
 );
 
 DROP TABLE IF EXISTS users_managers;
 CREATE TABLE users_managers (
     manager_id INT PRIMARY KEY FOREIGN KEY (manager_id) REFERENCES users(id),
+    salary FLOAT NOT NULL,
     dateOfEmployment DATE NOT NULL
 );
 
