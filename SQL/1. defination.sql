@@ -118,7 +118,7 @@ CREATE TABLE tickets (
     ticket_id INT PRIMARY KEY IDENTITY(1,1),
     schedule_id INT FOREIGN KEY (schedule_id) REFERENCES schedules(schedule_id),
     seat_id INT FOREIGN KEY (seat_id) REFERENCES seats(seat_id),
-    customer_id INT FOREIGN KEY (customer_id) REFERENCES users_customers(customer_id),
+    user_id INT FOREIGN KEY (user_id) REFERENCES users(id), -- if customer_id, then it is booked by customer, if clerk_id, then it is booked by clerk, if manager_id, then it is booked by manager
     ticket_status VARCHAR(255) NOT NULL CONSTRAINT ticket_status_ck CHECK (ticket_status IN ('Booked', 'Cancelled', 'Available')),
     payment_id INT FOREIGN KEY (payment_id) REFERENCES transactions(payment_id),
 );
