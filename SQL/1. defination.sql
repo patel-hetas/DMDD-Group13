@@ -151,6 +151,7 @@ CREATE TABLE events (
     event_description TEXT,
     event_start_time DATETIME NOT NULL,
     event_end_time DATETIME NOT NULL,
+    studio_id INT FOREIGN KEY (studio_id) REFERENCES studios(studio_id),
     event_revenue FLOAT NOT NULL,
     manager_id INT FOREIGN KEY (manager_id) REFERENCES users_managers(manager_id)
 );
