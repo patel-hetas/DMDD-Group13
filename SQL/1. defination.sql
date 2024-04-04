@@ -49,21 +49,21 @@ DROP TABLE IF EXISTS users_customers;
 CREATE TABLE users_customers (
     customer_id INT PRIMARY KEY FOREIGN KEY (customer_id) REFERENCES users(id),
     isVIP BIT NOT NULL DEFAULT 0, -- 0: not VIP, 1: VIP
-    dateOfMembership DATE NOT NULL
+    dateOfMembership DATE NOT NULL DEFAULT GETDATE()
 );
 
 DROP TABLE IF EXISTS users_managers;
 CREATE TABLE users_managers (
     manager_id INT PRIMARY KEY FOREIGN KEY (manager_id) REFERENCES users(id),
     salary FLOAT NOT NULL,
-    dateOfEmployment DATE NOT NULL
+    dateOfEmployment DATE NOT NULL DEFAULT GETDATE()
 );
 
 
 DROP TABLE IF EXISTS users_clerks;
 CREATE TABLE users_clerks (
     customer_id INT PRIMARY KEY FOREIGN KEY (customer_id) REFERENCES users(id),
-    dateOfEmployment DATE NOT NULL,
+    dateOfEmployment DATE NOT NULL DEFAULT GETDATE(),
     salary FLOAT NOT NULL,
     answersToManagerID INT FOREIGN KEY (answersToManagerID) REFERENCES users_managers(manager_id)
 );

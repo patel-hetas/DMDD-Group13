@@ -54,6 +54,8 @@ BEGIN
 
     INSERT INTO users (username, displayName, password_encrypted, phone, [role])
     VALUES (@username, @displayName, @password_encrypted, @phone, @role);
+
+    SET @user_id = SCOPE_IDENTITY();
 END;
 GO
 
@@ -92,7 +94,7 @@ AS
 BEGIN
     DECLARE @role VARCHAR(25);
     SET @role = 'Clerk';
-    EXEC sp_createUser @username, @displayName, @password_not_encrypted, @phone, @role, @user_id=@user_id OUTPUT;
+    EXEC sp_createUser @username, @displayName, @password_not_encrypted, @phone, @role, @user_id = @user_id OUTPUT;
     INSERT INTO users_clerks (customer_id, dateOfEmployment, salary, answersToManagerID)
     VALUES (@user_id, @dateOfEmployment, @salary, @answersToManagerID);
 END;
@@ -110,20 +112,41 @@ AS
 BEGIN
     DECLARE @role VARCHAR(25);
     SET @role = 'Customer';
-
-    PRINT 'Before'
-
     EXEC sp_createUser @username, @displayName, @password_not_encrypted, @phone, @role, @user_id = @customer_id OUTPUT;
-
-    PRINT 'About to insert into users_customer table with ' + CAST(@customer_id AS VARCHAR(10));
-
-    /*
     INSERT INTO users_customers (customer_id)
     VALUES (@customer_id);
-    */
+    
 END;
 GO
 
+--- 1.2 Login User
+DROP PROCEDURE IF EXISTS sp_loginUser;
+GO
+CREATE PROCEDURE sp_loginUser -- Login User
+    @username VARCHAR(50),
+    @password_not_encrypted VARCHAR(50)
+AS
+BEGIN
+    DECLARE @password_encrypted VARBINARY;
+    DECLARE @user_id INT;
+    DECLARE @role VARCHAR(25);
+
+    OPEN SYMMETRIC KEY UserPasswordKey DECRYPTION BY CERTIFICATE UserPasswordCertificate;
+    SET @password_encrypted = ENCRYPTBYKEY(KEY_GUID('UserPasswordKey'), @password_not_encrypted);
+
+    SELECT @user_id = id, @role = [role]
+    FROM users
+    WHERE username = @username AND password_encrypted = @password_encrypted;
+
+    IF @user_id IS NULL
+    BEGIN
+        RAISERROR('Invalid username or password', 16, 1);
+        RETURN;
+    END
+
+    SELECT @user_id AS user_id, @role AS role;
+END;
+GO
 
 USE master;
 GO
