@@ -1,4 +1,5 @@
 USE master;
+GO
 DROP DATABASE IF EXISTS ttms;
 GO
 CREATE DATABASE ttms;

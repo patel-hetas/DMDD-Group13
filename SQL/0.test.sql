@@ -28,8 +28,26 @@ GO
 
 DECLARE @user_id INT;
 DECLARE @answersToManagerID INT;
-EXEC sp_createUser_customer 'customer', 'Customer', 'password', '1234567890', @user_id OUTPUT;
+EXEC sp_createUser_customer 'customer1', 'Customer 1', 'password', '1234567890', @user_id OUTPUT;
 GO
 
-USE master;
+DECLARE @user_id INT;
+DECLARE @answersToManagerID INT;
+EXEC sp_createUser_customer 'customer2', 'Customer 2', 'password', '1234567890', @user_id OUTPUT;
 GO
+
+DECLARE @user_id INT;
+DECLARE @answersToManagerID INT;
+EXEC sp_createUser_customer 'customer3', 'Customer 3', 'password', '1234567890', @user_id OUTPUT;
+
+--- 1.4 Login Test
+EXEC sp_loginUser 'manager1', 'password';
+EXEC sp_loginUser 'clerk1', 'password';
+EXEC sp_loginUser 'clerk2', 'password';
+EXEC sp_loginUser 'customer1', 'password';
+EXEC sp_loginUser 'customer2', 'password';
+EXEC sp_loginUser 'customer3', 'password';
+EXEC sp_loginUser 'wrong_username', 'wrong_password';
+
+SELECT * FROM users;
+
