@@ -71,7 +71,7 @@ AS
 BEGIN
     DECLARE @role VARCHAR(25);
     SET @role = 'Manager';
-    EXEC sp_createUser @username, @displayName, @password_not_encrypted, @phone, @role, @user_id OUTPUT;
+    EXEC sp_createUser @username, @displayName, @password_not_encrypted, @phone, @role, @user_id=@user_id OUTPUT;
     INSERT INTO users_managers (manager_id, salary, dateOfEmployment)
     VALUES (@user_id, @salary, @dateOfEmployment);
 END;
@@ -92,7 +92,7 @@ AS
 BEGIN
     DECLARE @role VARCHAR(25);
     SET @role = 'Clerk';
-    EXEC sp_createUser @username, @displayName, @password_not_encrypted, @phone, @role, @user_id OUTPUT;
+    EXEC sp_createUser @username, @displayName, @password_not_encrypted, @phone, @role, @user_id=@user_id OUTPUT;
     INSERT INTO users_clerks (customer_id, dateOfEmployment, salary, answersToManagerID)
     VALUES (@user_id, @dateOfEmployment, @salary, @answersToManagerID);
 END;
@@ -105,13 +105,25 @@ CREATE PROCEDURE sp_createUser_customer -- Create Customer
     @displayName VARCHAR(50),
     @password_not_encrypted VARCHAR(50),
     @phone VARCHAR(15),
-    @user_id INT OUTPUT
+    @customer_id INT OUTPUT
 AS
 BEGIN
     DECLARE @role VARCHAR(25);
     SET @role = 'Customer';
-    EXEC sp_createUser @username, @displayName, @password_not_encrypted, @phone, @role, @user_id OUTPUT;
+
+    PRINT 'Before'
+
+    EXEC sp_createUser @username, @displayName, @password_not_encrypted, @phone, @role, @user_id = @customer_id OUTPUT;
+
+    PRINT 'About to insert into users_customer table with ' + CAST(@customer_id AS VARCHAR(10));
+
+    /*
     INSERT INTO users_customers (customer_id)
-    VALUES (@user_id);
+    VALUES (@customer_id);
+    */
 END;
+GO
+
+
+USE master;
 GO
