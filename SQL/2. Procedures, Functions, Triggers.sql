@@ -166,5 +166,137 @@ END;
 GO
 
 
+--- 2. About Movies
+
+--- 2.1 Movie Itself
+DROP PROCEDURE IF EXISTS sp_createMovie;
+GO
+CREATE PROCEDURE sp_createMovie -- Create Movie
+    @name VARCHAR(50),
+    @duration INT,
+    @age_rating VARCHAR(10),
+    @movie_id INT OUTPUT
+AS
+BEGIN
+    INSERT INTO movies (movie_name, duration, age_rating)
+    VALUES (@name, @duration, @age_rating);
+
+    SET @movie_id = SCOPE_IDENTITY();
+END;
+
+DROP PROCEDURE IF EXISTS sp_modifyMovie;
+GO
+CREATE PROCEDURE sp_modifyMovie -- Modify Movie
+    @movie_id INT,
+    @name VARCHAR(50),
+    @duration INT,
+    @age_rating VARCHAR(10)
+AS
+BEGIN
+    UPDATE movies
+    SET movie_name = @name, duration = @duration, age_rating = @age_rating
+    WHERE movie_id = @movie_id;
+END;
+
+--- 2.2 Actors
+
+DROP PROCEDURE IF EXISTS sp_createActor;
+GO
+CREATE PROCEDURE sp_createActor -- Create Actor
+    @name VARCHAR(50),
+    @bio TEXT,
+    @actor_id INT OUTPUT
+AS
+BEGIN
+    INSERT INTO actors (actor_name, bio)
+    VALUES (@name, @bio);
+
+    SET @actor_id = SCOPE_IDENTITY();
+END;
+
+DROP PROCEDURE IF EXISTS sp_modifyActor;
+GO
+CREATE PROCEDURE sp_modifyActor -- Modify Actor
+    @actor_id INT,
+    @name VARCHAR(50),
+    @bio TEXT
+AS
+BEGIN
+    UPDATE actors
+    SET actor_name = @name, bio = @bio
+    WHERE actor_id = @actor_id;
+END;
+
+DROP PROCEDURE IF EXISTS sp_associateActorWithMovie;
+GO
+CREATE PROCEDURE sp_associateActorWithMovie -- Associate Actor with Movie
+    @movie_id INT,
+    @actor_id INT
+AS
+BEGIN
+    INSERT INTO movies_actors (movie_id, actor_id)
+    VALUES (@movie_id, @actor_id);
+END;
+
+DROP PROCEDURE IF EXISTS sp_disassociateActorWithMovie;
+GO
+CREATE PROCEDURE sp_disassociateActorWithMovie -- Disassociate Actor with Movie
+    @movie_id INT,
+    @actor_id INT
+AS
+BEGIN
+    DELETE FROM movies_actors
+    WHERE movie_id = @movie_id AND actor_id = @actor_id;
+END;
+
+--- 2.3 Genres
+
+DROP PROCEDURE IF EXISTS sp_createGenre;
+GO
+CREATE PROCEDURE sp_createGenre -- Create Genre
+    @name VARCHAR(50),
+    @genre_id INT OUTPUT
+AS
+BEGIN
+    INSERT INTO genres (genre_name)
+    VALUES (@name);
+
+    SET @genre_id = SCOPE_IDENTITY();
+END;
+
+DROP PROCEDURE IF EXISTS sp_modifyGenre;
+GO
+CREATE PROCEDURE sp_modifyGenre -- Modify Genre
+    @genre_id INT,
+    @name VARCHAR(50)
+AS
+BEGIN
+    UPDATE genres
+    SET genre_name = @name
+    WHERE genre_id = @genre_id;
+END;
+
+DROP PROCEDURE IF EXISTS sp_associateGenreWithMovie;
+GO
+CREATE PROCEDURE sp_associateGenreWithMovie -- Associate Genre with Movie
+    @movie_id INT,
+    @genre_id INT
+AS
+BEGIN
+    INSERT INTO movies_genres (movie_id, genre_id)
+    VALUES (@movie_id, @genre_id);
+END;
+
+DROP PROCEDURE IF EXISTS sp_disassociateGenreWithMovie;
+GO
+CREATE PROCEDURE sp_disassociateGenreWithMovie -- Disassociate Genre with Movie
+    @movie_id INT,
+    @genre_id INT
+AS
+BEGIN
+    DELETE FROM movies_genres
+    WHERE movie_id = @movie_id AND genre_id = @genre_id;
+END;
+
 USE master;
 GO
