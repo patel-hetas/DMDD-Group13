@@ -39,6 +39,15 @@ GO
 DECLARE @user_id INT;
 DECLARE @answersToManagerID INT;
 EXEC sp_createUser_customer 'customer3', 'Customer 3', 'password', '1234567890', @user_id OUTPUT;
+GO
+
+-- 1.4 Modify a user
+
+DECLARE @user_id INT;
+DECLARE @password_not_encrypted VARCHAR(50);
+SET @user_id = (SELECT id FROM users WHERE username = 'customer3');
+SET @password_not_encrypted = 'password';
+EXEC sp_modifyUserByUserID @user_id, 'customer3', 'Customer 3', @password_not_encrypted, '1145141919810';
 
 --- 1.4 Login Test
 EXEC sp_loginUser 'manager1', 'password';
