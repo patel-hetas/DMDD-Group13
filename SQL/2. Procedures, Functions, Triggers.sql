@@ -148,5 +148,23 @@ BEGIN
 END;
 GO
 
+--- 1.3. Modify User Information
+DROP PROCEDURE IF EXISTS sp_modifyUserByUserID;
+GO
+CREATE PROCEDURE sp_modifyUserByUserID -- Modify User Information
+    @user_id INT,
+    @username VARCHAR(50),
+    @displayName VARCHAR(50),
+    @password_not_encrypted VARCHAR(50),
+    @phone VARCHAR(15)
+AS
+BEGIN
+    UPDATE users
+    SET username = @username, displayName = @displayName, password_encrypted = dbo.fn_getEncryptedPassword(@password_not_encrypted), phone = @phone
+    WHERE id = @user_id;
+END;
+GO
+
+
 USE master;
 GO
