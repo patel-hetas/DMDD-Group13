@@ -300,3 +300,162 @@ END;
 
 USE master;
 GO
+
+
+
+
+-- Stored Procedure to add a New Movie
+DROP PROCEDURE IF EXISTS sp_BookTicket;
+GO
+CREATE PROCEDURE sp_BookTicket
+    @schedule_id INT,
+    @seat_id INT,
+    @user_id INT,
+    @payment_method VARCHAR(255),
+    @amount FLOAT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Insert transaction first
+    DECLARE @payment_id INT;
+    INSERT INTO transactions (user_id, amount, payment_method)
+    VALUES (@user_id, @amount, @payment_method);
+
+    SET @payment_id = SCOPE_IDENTITY();
+
+    -- Insert ticket with status 'Booked' and link the transaction
+    INSERT INTO tickets (schedule_id, seat_id, user_id, ticket_status, payment_id)
+    VALUES (@schedule_id, @seat_id, @user_id, 'Booked', @payment_id);
+END;
+GO
+
+
+
+-- Record Event Revenue
+DROP PROCEDURE IF EXISTS sp_RecordEventRevenue;
+GO
+CREATE PROCEDURE sp_RecordEventRevenue
+    @event_id INT,
+    @revenue FLOAT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Update the event's revenue
+    UPDATE events
+    SET event_revenue = @revenue
+    WHERE event_id = @event_id;
+END;
+GO
+
+
+-- Add a Movie Review
+DROP PROCEDURE IF EXISTS sp_AddMovieReview;
+GO
+CREATE PROCEDURE sp_AddMovieReview
+    @customer_id INT,
+    @movie_id INT,
+    @rating INT,
+    @comment TEXT,
+    @dateAndTime DATETIME
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Validate the rating value
+    IF NOT (@rating BETWEEN 1 AND 5)
+        THROW 50002, 'Rating must be between 1 and 5.', 1;
+
+    INSERT INTO customer_MovieReviews (customer_id, movie_id, rating, comment, dateAndTime)
+    VALUES (@customer_id, @movie_id, @rating, @comment, @dateAndTime);
+END;
+GO
+
+
+
+-- ================================================Triggers==================================================
+
+-- Generate Tickets Once a Movie Schedule is Released
+CREATE TRIGGER trg_GenerateTicketsOnNewSchedule
+ON schedules
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- For each new schedule, insert a new ticket for each seat in the studio
+    INSERT INTO tickets (schedule_id, seat_id, user_id, ticket_status)
+    SELECT 
+        i.schedule_id, 
+        s.seat_id, 
+        NULL, 
+        'Available'
+    FROM 
+        inserted i
+        CROSS JOIN seats s
+    WHERE 
+        s.studio_id = i.studio_id;
+END;
+GO
+
+
+-- Invalidate Tickets Upon Movie Schedule Cancellation
+CREATE TRIGGER trg_InvalidateTicketsOnScheduleCancellation
+ON schedules
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF UPDATE(end_time)
+    BEGIN
+        DECLARE @schedule_id INT;
+
+        SELECT @schedule_id = schedule_id FROM inserted WHERE end_time < GETDATE();
+
+        -- Set the ticket_status to 'Cancelled' for all tickets associated with the cancelled schedule.
+        UPDATE tickets
+        SET ticket_status = 'Cancelled'
+        WHERE schedule_id = @schedule_id;
+    END
+END;
+GO
+
+
+-- Update Seat Availability When Ticket is Cancelled
+CREATE TRIGGER trg_UpdateSeatAvailabilityOnTicketCancelled
+ON tickets
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF UPDATE(ticket_status)
+    BEGIN
+        -- Assuming there is an 'is_available' column in the 'seats' table.
+        UPDATE seats
+        SET is_available = 1
+        WHERE seat_id IN (SELECT seat_id FROM inserted WHERE ticket_status = 'Cancelled');
+    END
+END;
+GO
+
+
+-- Update Seat Availability When Ticket is Cancelled
+CREATE TRIGGER trg_UpdateCustomerFeedbackScore
+ON customer_feedbacks
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Assuming there is a feedback_score column in the users_customers table
+    UPDATE users_customers
+    SET feedback_score = feedback_score + 1 -- Or use a more complex calculation
+    WHERE customer_id IN (SELECT customer_id FROM inserted);
+END;
+GO
+
+
+
