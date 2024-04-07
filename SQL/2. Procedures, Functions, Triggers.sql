@@ -457,5 +457,87 @@ BEGIN
 END;
 GO
 
+-- ===================================================UDFs===========================================
+--- 3.1 About Seats
 
+CREATE FUNCTION dbo.GetSeatLabel
+( @SeatRow INT, 
+  @SeatColumn INT)
+ RETURNS VARCHAR(15)
+ AS
+ BEGIN 
+	RETURN 'Row ' + CAST(@SeatRow AS VARCHAR(5)) + ' Seat ' + CAST(@SeatColumn AS VARCHAR(5));
+END;
+GO
 
+-- 4. About Transactions
+CREATE FUNCTION	dbo.GetTotalAmount (@Amount FLOAT)
+RETURNS FLOAT
+AS
+BEGIN
+	DECLARE @ServiceCharge FLOAT = 5.00;
+	Return @Amount + @ServiceCharge;
+END;
+GO
+
+--- 5. About Schedules Tickets
+CREATE FUNCTION dbo.GetScheduleDuration (@StartTime DATETIME, @EndTime DATETIME)
+RETURNS VARCHAR(50)
+AS
+BEGIN
+	DECLARE @TotalMinutes INT = DATEDIFF(MINUTE, @StartTime, @EndTime);
+	DECLARE @Hours INT = @TotalMinutes / 60;
+	DECLARE @Minutes INT = @TotalMinutes % 60;
+	RETURN CAST(@Hours AS VARCHAR(10)) + 'h ' + RIGHT('0' + CAST(@Minutes AS VARCHAR(2)), 2) + 'm';
+END;
+GO
+
+--- 5.1 About Tickets
+CREATE FUNCTION dbo.GetTicketStatusMessage (@TicketStatus VARCHAR(255))
+RETURNS VARCHAR(255)
+AS
+BEGIN 
+	IF @TicketStatus = 'Booked'
+		RETURN 'Ticket booked successfully';
+	IF @TicketStatus = 'Cancelled'
+		RETURN 'Ticket cancelled successfully';
+	IF @TicketStatus = 'Available'
+		RETURN 'Ticket is available';
+	RETURN 'Unknown status';
+END;
+GO
+
+--- 6. About Customer's Special Functionalities
+
+CREATE FUNCTION dbo.GetReviewCategory(@rating INT)
+RETURNS VARCHAR(50)
+AS
+BEGIN
+	DECLARE @category VARCHAR(50)
+	SELECT @category = CASE 
+							WHEN @rating = 5 THEN 'Excellent'
+							WHEN @rating = 4 THEN 'Good'
+							WHEN @rating = 3 THEN 'Average'
+							WHEN @rating = 2 THEN 'Poor'
+							WHEN @rating = 1 THEN 'Bad'
+END;
+RETURN @category
+END;
+
+--- 7. About Manager's Special Functionalities
+
+CREATE FUNCTION dbo.CalculateRevenuePerHour ( @event_revenue FLOAT, @event_start_time DATETIME, @event_end_time DATETIME)
+RETURNS FLOAT
+AS
+BEGIN
+	DECLARE @duration FLOAT
+	DECLARE @revenuePerHour FLOAT
+
+	SET @duration = DATEDIFF(HOUR, @event_start_time, @event_end_time)
+	IF @duration = 0
+		SET @revenuePerHour = 0
+	ELSE
+		SET @revenuePerHour = @event_revenue / @duration
+
+	RETURN @revenuePerHour
+END

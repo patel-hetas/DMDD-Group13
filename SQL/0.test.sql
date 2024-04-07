@@ -60,3 +60,84 @@ EXEC sp_loginUser 'wrong_username', 'wrong_password';
 
 SELECT * FROM users;
 
+--- 3.1 About Seats
+-- test for seats
+ALTER TABLE seats
+ADD SeatLabel AS dbo.GetSeatLabel(seat_row, seat_column);
+GO
+
+--just for testing purpose, if we have insert queries already, then no need for these extra insert queries
+INSERT INTO studios (studio_name, screen_type) VALUES ('My Studio', '2D');
+INSERT INTO seats (studio_id, seat_row, seat_column) 
+VALUES (1, 5, 10); 
+
+select * from seats;
+
+-- 4. About Transactions
+--just for testing purpose, if we have insert queries already, then no need for these extra insert queries
+INSERT INTO transactions (user_id, amount, payment_method) 
+VALUES (1, 150.00, 'Credit Card');
+
+-- test for transactions
+ALTER Table transactions
+ADD TotalAmountWithServiceCharge AS dbo.GetTotalAmount(amount);
+
+select * from transactions;
+
+--- 5. About Schedules and Tickets
+--just for testing purpose, if we have insert queries already, then no need for these extra insert queries
+INSERT INTO movies (movie_name, duration, age_rating)
+VALUES ('Your Movie Name', 120, 'PG-13');
+
+INSERT INTO schedules (movie_id, studio_id, start_time, end_time, price)
+VALUES (1, 1, '2024-01-01T09:00:00', '2024-01-01T11:15:00', 10.00);
+select * from schedules;
+
+-- test for schedules
+DECLARE @TestStartTime DATETIME = '2024-01-01T09:00:00';
+DECLARE @TestEndTime DATETIME = '2024-01-01T11:15:00';
+SELECT dbo.GetScheduleDuration(@TestStartTime, @TestEndTime) AS DurationTestResult;
+
+--- 5.1 About Tickets
+select * from tickets;
+
+--just for testing purpose, if we have insert queries already, then no need for these extra insert queries
+INSERT INTO tickets (schedule_id, seat_id, user_id, ticket_status, payment_id) 
+VALUES (2, 3, 1, 'Booked', 1);
+
+-- test for tickets
+SELECT ticket_status,dbo.GetTicketStatusMessage(ticket_status) AS StatusMessage
+FROM tickets;
+
+--- 6. About Customer's Special Functionalities
+
+--just for testing purpose, if we have insert queries already, then no need for these extra insert queries
+INSERT INTO users_customers (customer_id, isVIP, dateOfMembership)
+VALUES
+(1, 1, '2024-01-01');
+
+--just for testing purpose, if we have insert queries already, then no need for these extra insert queries
+INSERT INTO movies (movie_name, duration, age_rating)
+VALUES
+('Movie Title 1', 120, 'PG');
+
+select * from movies;
+
+--just for testing purpose, if we have insert queries already, then no need for these extra insert queries
+INSERT INTO customer_MovieReviews (customer_id, movie_id, rating, comment, dateAndTime)
+VALUES
+(1, 1, 5, 'Great movie with excellent storytelling!', '2024-04-06 20:00:00');
+
+-- test for customer movie reviews
+ALTER TABLE customer_MovieReviews
+ADD review_category AS dbo.GetReviewCategory(rating);
+
+select * from customer_MovieReviews;
+
+--- 7. About Manager's Special Functionalities
+
+INSERT INTO events (event_name, event_description, event_start_time, event_end_time, studio_id, event_revenue, manager_id)
+VALUES ('Event Name 1', 'Description of Event 1', '2024-04-10 10:00:00', '2024-04-10 14:00:00', 1, 10000.00, 1);
+
+SELECT event_id, event_name, dbo.CalculateRevenuePerHour(event_revenue, event_start_time, event_end_time) AS revenue_per_hour
+FROM events;
