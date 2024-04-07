@@ -95,7 +95,7 @@ BEGIN
     DECLARE @role VARCHAR(25);
     SET @role = 'Clerk';
     EXEC sp_createUser @username, @displayName, @password_not_encrypted, @phone, @role, @user_id = @user_id OUTPUT;
-    INSERT INTO users_clerks (customer_id, dateOfEmployment, salary, answersToManagerID)
+    INSERT INTO users_clerks (clerk_id, dateOfEmployment, salary, answersToManagerID)
     VALUES (@user_id, @dateOfEmployment, @salary, @answersToManagerID);
 END;
 GO
