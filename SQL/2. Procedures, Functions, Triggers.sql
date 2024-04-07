@@ -151,7 +151,7 @@ GO
 --- 1.3. Modify User Information
 DROP PROCEDURE IF EXISTS sp_modifyUserByUserID;
 GO
-CREATE PROCEDURE sp_modifyUserByUserID -- Modify User Information
+CREATE PROCEDURE sp_modifyUserByUserID
     @user_id INT,
     @username VARCHAR(50),
     @displayName VARCHAR(50),
@@ -183,10 +183,11 @@ BEGIN
 
     SET @movie_id = SCOPE_IDENTITY();
 END;
+GO
 
 DROP PROCEDURE IF EXISTS sp_modifyMovie;
 GO
-CREATE PROCEDURE sp_modifyMovie -- Modify Movie
+CREATE PROCEDURE sp_modifyMovie
     @movie_id INT,
     @name VARCHAR(50),
     @duration INT,
@@ -197,6 +198,7 @@ BEGIN
     SET movie_name = @name, duration = @duration, age_rating = @age_rating
     WHERE movie_id = @movie_id;
 END;
+GO
 
 --- 2.2 Actors
 
@@ -213,6 +215,7 @@ BEGIN
 
     SET @actor_id = SCOPE_IDENTITY();
 END;
+GO
 
 DROP PROCEDURE IF EXISTS sp_modifyActor;
 GO
@@ -226,6 +229,7 @@ BEGIN
     SET actor_name = @name, bio = @bio
     WHERE actor_id = @actor_id;
 END;
+GO
 
 DROP PROCEDURE IF EXISTS sp_associateActorWithMovie;
 GO
@@ -237,6 +241,7 @@ BEGIN
     INSERT INTO movies_actors (movie_id, actor_id)
     VALUES (@movie_id, @actor_id);
 END;
+GO
 
 DROP PROCEDURE IF EXISTS sp_disassociateActorWithMovie;
 GO
@@ -248,6 +253,7 @@ BEGIN
     DELETE FROM movies_actors
     WHERE movie_id = @movie_id AND actor_id = @actor_id;
 END;
+GO
 
 --- 2.3 Genres
 
@@ -263,6 +269,7 @@ BEGIN
 
     SET @genre_id = SCOPE_IDENTITY();
 END;
+GO
 
 DROP PROCEDURE IF EXISTS sp_modifyGenre;
 GO
@@ -275,6 +282,7 @@ BEGIN
     SET genre_name = @name
     WHERE genre_id = @genre_id;
 END;
+GO
 
 DROP PROCEDURE IF EXISTS sp_associateGenreWithMovie;
 GO
@@ -286,6 +294,7 @@ BEGIN
     INSERT INTO movies_genres (movie_id, genre_id)
     VALUES (@movie_id, @genre_id);
 END;
+GO
 
 DROP PROCEDURE IF EXISTS sp_disassociateGenreWithMovie;
 GO
@@ -297,6 +306,7 @@ BEGIN
     DELETE FROM movies_genres
     WHERE movie_id = @movie_id AND genre_id = @genre_id;
 END;
+GO
 
 USE master;
 GO
@@ -377,6 +387,8 @@ GO
 -- ================================================Triggers==================================================
 
 -- Generate Tickets Once a Movie Schedule is Released
+DROP TRIGGER IF EXISTS trg_GenerateTicketsOnNewSchedule;
+GO
 CREATE TRIGGER trg_GenerateTicketsOnNewSchedule
 ON schedules
 AFTER INSERT
@@ -401,6 +413,8 @@ GO
 
 
 -- Invalidate Tickets Upon Movie Schedule Cancellation
+DROP TRIGGER IF EXISTS trg_InvalidateTicketsOnScheduleCancellation;
+GO
 CREATE TRIGGER trg_InvalidateTicketsOnScheduleCancellation
 ON schedules
 AFTER UPDATE
@@ -424,6 +438,8 @@ GO
 
 
 -- Update Seat Availability When Ticket is Cancelled
+DROP TRIGGER IF EXISTS trg_UpdateSeatAvailabilityOnTicketCancelled;
+GO
 CREATE TRIGGER trg_UpdateSeatAvailabilityOnTicketCancelled
 ON tickets
 AFTER UPDATE
@@ -443,6 +459,8 @@ GO
 
 
 -- Update Seat Availability When Ticket is Cancelled
+DROP TRIGGER IF EXISTS trg_UpdateSeatAvailabilityOnTicketCancelled;
+GO
 CREATE TRIGGER trg_UpdateCustomerFeedbackScore
 ON customer_feedbacks
 AFTER INSERT
@@ -460,6 +478,8 @@ GO
 -- ===================================================UDFs===========================================
 --- 3.1 About Seats
 
+DROP FUNCTION IF EXISTS dbo.GetSeatLabel;
+GO
 CREATE FUNCTION dbo.GetSeatLabel
 ( @SeatRow INT, 
   @SeatColumn INT)
@@ -471,6 +491,8 @@ END;
 GO
 
 -- 4. About Transactions
+DROP FUNCTION IF EXISTS dbo.GetTotalAmount;
+GO
 CREATE FUNCTION	dbo.GetTotalAmount (@Amount FLOAT)
 RETURNS FLOAT
 AS
@@ -481,6 +503,8 @@ END;
 GO
 
 --- 5. About Schedules Tickets
+DROP FUNCTION IF EXISTS dbo.GetScheduleDuration;
+GO
 CREATE FUNCTION dbo.GetScheduleDuration (@StartTime DATETIME, @EndTime DATETIME)
 RETURNS VARCHAR(50)
 AS
@@ -493,6 +517,8 @@ END;
 GO
 
 --- 5.1 About Tickets
+DROP FUNCTION IF EXISTS dbo.GetTicketStatusMessage;
+GO
 CREATE FUNCTION dbo.GetTicketStatusMessage (@TicketStatus VARCHAR(255))
 RETURNS VARCHAR(255)
 AS
@@ -509,23 +535,29 @@ GO
 
 --- 6. About Customer's Special Functionalities
 
+DROP FUNCTION IF EXISTS dbo.GetReviewCategory;
+GO
 CREATE FUNCTION dbo.GetReviewCategory(@rating INT)
 RETURNS VARCHAR(50)
 AS
 BEGIN
 	DECLARE @category VARCHAR(50)
 	SELECT @category = CASE 
-							WHEN @rating = 5 THEN 'Excellent'
-							WHEN @rating = 4 THEN 'Good'
-							WHEN @rating = 3 THEN 'Average'
-							WHEN @rating = 2 THEN 'Poor'
-							WHEN @rating = 1 THEN 'Bad'
+        WHEN @rating = 5 THEN 'Excellent'
+        WHEN @rating = 4 THEN 'Good'
+        WHEN @rating = 3 THEN 'Average'
+        WHEN @rating = 2 THEN 'Poor'
+        WHEN @rating = 1 THEN 'Bad'
+    ELSE 'Invalid Rating'
+    END
+    RETURN @category
 END;
-RETURN @category
-END;
+GO
 
 --- 7. About Manager's Special Functionalities
 
+DROP FUNCTION IF EXISTS dbo.CalculateRevenuePerHour;
+GO
 CREATE FUNCTION dbo.CalculateRevenuePerHour ( @event_revenue FLOAT, @event_start_time DATETIME, @event_end_time DATETIME)
 RETURNS FLOAT
 AS
