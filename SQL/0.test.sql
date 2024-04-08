@@ -60,6 +60,50 @@ EXEC sp_loginUser 'wrong_username', 'wrong_password';
 
 SELECT * FROM users;
 
+--- 2. About Movies
+
+-- 2.1 Create a movie
+DECLARE @movie_id INT;
+EXEC sp_createMovie 'Movie Title 1', 120, 'PG', @movie_id OUTPUT;
+GO
+
+DECLARE @movie_id INT;
+SET @movie_id = (SELECT movie_id FROM movies WHERE movie_name = 'Movie Title 1');
+EXEC sp_modifyMovie @movie_id, 'Movie Title 1 After Modification', 120, 'PG-13';
+GO
+
+--- 2.2 About Actors
+DECLARE @actor_id INT;
+EXEC sp_createActor 'Actor 1', 'Bio of Actor 1', @actor_id OUTPUT;
+GO
+DECLARE @actor_id INT;
+EXEC sp_createActor 'Actor 2', 'Bio of Actor 2', @actor_id OUTPUT;
+GO
+
+DECLARE @actor_id INT;
+SET @actor_id = (SELECT actor_id FROM actors WHERE actor_name = 'Actor 1')
+DECLARE @movie_id INT;
+SET @movie_id = (SELECT movie_id FROM movies WHERE movie_name = 'Movie Title 1 After Modification');
+EXEC sp_associateActorWithMovie @movie_id, @actor_id;
+GO
+
+--- 2.3 About Genres
+DECLARE @genre_id INT;
+EXEC sp_createGenre 'Action', @genre_id OUTPUT;
+GO
+
+DECLARE @genre_id INT;
+EXEC sp_createGenre 'Comedy', @genre_id OUTPUT;
+GO
+
+DECLARE @genre_id INT;
+SET @genre_id = (SELECT genre_id FROM genres WHERE genre_name = 'Action');
+DECLARE @movie_id INT;
+SET @movie_id = (SELECT movie_id FROM movies WHERE movie_name = 'Movie Title 1 After Modification');
+EXEC sp_associateGenreWithMovie @movie_id, @genre_id;
+GO
+
+
 --- 3.1 About Seats
 -- test for seats
 ALTER TABLE seats

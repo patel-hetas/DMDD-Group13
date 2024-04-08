@@ -312,6 +312,104 @@ USE master;
 GO
 
 
+--- 3. About Studios and Seats
+
+--- 3.1 About Studios
+
+DROP PROCEDURE IF EXISTS sp_createStudio;
+GO
+CREATE PROCEDURE sp_createStudio -- Create Studio
+    @name VARCHAR(50),
+    @screen_type VARCHAR(10),
+    @studio_id INT OUTPUT
+AS
+BEGIN
+    INSERT INTO studios (studio_name, screen_type)
+    VALUES (@name, @screen_type);
+
+    SET @studio_id = SCOPE_IDENTITY();
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_modifyStudio;
+GO
+CREATE PROCEDURE sp_modifyStudio -- Modify Studio
+    @studio_id INT,
+    @name VARCHAR(50),
+    @screen_type VARCHAR(10)
+AS
+BEGIN
+    UPDATE studios
+    SET studio_name = @name, screen_type = @screen_type
+    WHERE studio_id = @studio_id;
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_deleteStudio;
+GO
+CREATE PROCEDURE sp_deleteStudio -- Delete Studio
+    @studio_id INT
+AS
+BEGIN
+    DELETE FROM studios
+    WHERE studio_id = @studio_id;
+END;
+GO
+
+--- 3.2 About Seats
+
+DROP PROCEDURE IF EXISTS sp_createSeat;
+GO
+CREATE PROCEDURE sp_createSeat -- Create Seat
+    @studio_id INT,
+    @row INT,
+    @column INT,
+    @seat_id INT OUTPUT
+AS
+BEGIN
+    INSERT INTO seats (studio_id, seat_row, seat_column)
+    VALUES (@studio_id, @row, @column);
+
+    SET @seat_id = SCOPE_IDENTITY();
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_modiftySeat;
+GO
+CREATE PROCEDURE sp_modiftySeat -- Modify Seat
+    @seat_id INT,
+    @row INT,
+    @column INT
+AS
+BEGIN
+    UPDATE seats
+    SET seat_row = @row, seat_column = @column
+    WHERE seat_id = @seat_id;
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_deleteSeat;
+GO
+CREATE PROCEDURE sp_deleteSeat -- Delete Seat
+    @seat_id INT
+AS
+BEGIN
+    DELETE FROM seats
+    WHERE seat_id = @seat_id;
+END;
+GO
+
+DROP TRIGGER IF EXISTS trg_deleteSeatWhenDeletingStudio;
+GO
+CREATE TRIGGER trg_deleteSeatWhenDeletingStudio
+ON studios
+AFTER DELETE
+AS
+BEGIN
+    DELETE FROM seats
+    WHERE studio_id IN (SELECT studio_id FROM deleted);
+END;
+GO
 
 
 -- Stored Procedure to add a New Movie
