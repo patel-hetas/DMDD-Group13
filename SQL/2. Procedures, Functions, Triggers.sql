@@ -819,243 +819,82 @@ END;
 GO
 
 
+-- 8. Functionalities for Statistics
 
-/*
--- Stored Procedure to add a New Movie
-DROP PROCEDURE IF EXISTS sp_BookTicket;
+DROP FUNCTION IF EXISTS GetRevenueByMovieID;
 GO
-CREATE PROCEDURE sp_BookTicket
-    @schedule_id INT,
-    @seat_id INT,
-    @user_id INT,
-    @payment_method VARCHAR(255),
-    @amount FLOAT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- Insert transaction first
-    DECLARE @payment_id INT;
-    INSERT INTO transactions (user_id, amount, payment_method)
-    VALUES (@user_id, @amount, @payment_method);
-
-    SET @payment_id = SCOPE_IDENTITY();
-
-    -- Insert ticket with status 'Booked' and link the transaction
-    INSERT INTO tickets (schedule_id, seat_id, user_id, ticket_status, payment_id)
-    VALUES (@schedule_id, @seat_id, @user_id, 'Booked', @payment_id);
-END;
-GO
-
-
-
--- Record Event Revenue
-DROP PROCEDURE IF EXISTS sp_RecordEventRevenue;
-GO
-CREATE PROCEDURE sp_RecordEventRevenue
-    @event_id INT,
-    @revenue FLOAT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- Update the event's revenue
-    UPDATE events
-    SET event_revenue = @revenue
-    WHERE event_id = @event_id;
-END;
-GO
-
-
--- Add a Movie Review
-DROP PROCEDURE IF EXISTS sp_AddMovieReview;
-GO
-CREATE PROCEDURE sp_AddMovieReview
-    @customer_id INT,
-    @movie_id INT,
-    @rating INT,
-    @comment TEXT,
-    @dateAndTime DATETIME
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- Validate the rating value
-    IF NOT (@rating BETWEEN 1 AND 5)
-        THROW 50002, 'Rating must be between 1 and 5.', 1;
-
-    INSERT INTO customer_MovieReviews (customer_id, movie_id, rating, comment, dateAndTime)
-    VALUES (@customer_id, @movie_id, @rating, @comment, @dateAndTime);
-END;
-GO
-
-
-
--- ================================================Triggers==================================================
-
--- Invalidate Tickets Upon Movie Schedule Cancellation
-DROP TRIGGER IF EXISTS trg_InvalidateTicketsOnScheduleCancellation;
-GO
-CREATE TRIGGER trg_InvalidateTicketsOnScheduleCancellation
-ON schedules
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    IF UPDATE(end_time)
-    BEGIN
-        DECLARE @schedule_id INT;
-
-        SELECT @schedule_id = schedule_id FROM inserted WHERE end_time < GETDATE();
-
-        -- Set the ticket_status to 'Cancelled' for all tickets associated with the cancelled schedule.
-        UPDATE tickets
-        SET ticket_status = 'Cancelled'
-        WHERE schedule_id = @schedule_id;
-    END
-END;
-GO
-
-
--- Update Seat Availability When Ticket is Cancelled
-DROP TRIGGER IF EXISTS trg_UpdateSeatAvailabilityOnTicketCancelled;
-GO
-CREATE TRIGGER trg_UpdateSeatAvailabilityOnTicketCancelled
-ON tickets
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    IF UPDATE(ticket_status)
-    BEGIN
-        -- Assuming there is an 'is_available' column in the 'seats' table.
-        UPDATE seats
-        SET is_available = 1
-        WHERE seat_id IN (SELECT seat_id FROM inserted WHERE ticket_status = 'Cancelled');
-    END
-END;
-GO
-
-
--- Update Seat Availability When Ticket is Cancelled
-DROP TRIGGER IF EXISTS trg_UpdateSeatAvailabilityOnTicketCancelled;
-GO
-CREATE TRIGGER trg_UpdateCustomerFeedbackScore
-ON customer_feedbacks
-AFTER INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- Assuming there is a feedback_score column in the users_customers table
-    UPDATE users_customers
-    SET feedback_score = feedback_score + 1 -- Or use a more complex calculation
-    WHERE customer_id IN (SELECT customer_id FROM inserted);
-END;
-GO
-
--- ===================================================UDFs===========================================
---- 3.1 About Seats
-
-DROP FUNCTION IF EXISTS dbo.GetSeatLabel;
-GO
-CREATE FUNCTION dbo.GetSeatLabel
-( @SeatRow INT, 
-  @SeatColumn INT)
- RETURNS VARCHAR(15)
- AS
- BEGIN 
-	RETURN 'Row ' + CAST(@SeatRow AS VARCHAR(5)) + ' Seat ' + CAST(@SeatColumn AS VARCHAR(5));
-END;
-GO
-
--- 4. About Transactions
-DROP FUNCTION IF EXISTS dbo.GetTotalAmount;
-GO
-CREATE FUNCTION	dbo.GetTotalAmount (@Amount FLOAT)
+CREATE FUNCTION GetRevenueByMovieID
+    (@movie_id INT)
 RETURNS FLOAT
 AS
 BEGIN
-	DECLARE @ServiceCharge FLOAT = 5.00;
-	Return @Amount + @ServiceCharge;
+    DECLARE @revenue FLOAT;
+
+    SELECT @revenue = (s.price)
+    FROM schedules s
+    JOIN tickets t on s.schedule_id = t.schedule_id
+    WHERE s.movie_id = @movie_id AND t.ticket_status = 'Booked';
+    
+    RETURN @revenue;
 END;
 GO
 
---- 5. About Schedules Tickets
-DROP FUNCTION IF EXISTS dbo.GetScheduleDuration;
-GO
-CREATE FUNCTION dbo.GetScheduleDuration (@StartTime DATETIME, @EndTime DATETIME)
-RETURNS VARCHAR(50)
-AS
-BEGIN
-	DECLARE @TotalMinutes INT = DATEDIFF(MINUTE, @StartTime, @EndTime);
-	DECLARE @Hours INT = @TotalMinutes / 60;
-	DECLARE @Minutes INT = @TotalMinutes % 60;
-	RETURN CAST(@Hours AS VARCHAR(10)) + 'h ' + RIGHT('0' + CAST(@Minutes AS VARCHAR(2)), 2) + 'm';
-END;
-GO
 
---- 5.1 About Tickets
-DROP FUNCTION IF EXISTS dbo.GetTicketStatusMessage;
+DROP FUNCTION IF EXISTS GetRevenueByClertID;
 GO
-CREATE FUNCTION dbo.GetTicketStatusMessage (@TicketStatus VARCHAR(255))
-RETURNS VARCHAR(255)
-AS
-BEGIN 
-	IF @TicketStatus = 'Booked'
-		RETURN 'Ticket booked successfully';
-	IF @TicketStatus = 'Cancelled'
-		RETURN 'Ticket cancelled successfully';
-	IF @TicketStatus = 'Available'
-		RETURN 'Ticket is available';
-	RETURN 'Unknown status';
-END;
-GO
-
---- 6. About Customer's Special Functionalities
-
-DROP FUNCTION IF EXISTS dbo.GetReviewCategory;
-GO
-CREATE FUNCTION dbo.GetReviewCategory(@rating INT)
-RETURNS VARCHAR(50)
-AS
-BEGIN
-	DECLARE @category VARCHAR(50)
-	SELECT @category = CASE 
-        WHEN @rating = 5 THEN 'Excellent'
-        WHEN @rating = 4 THEN 'Good'
-        WHEN @rating = 3 THEN 'Average'
-        WHEN @rating = 2 THEN 'Poor'
-        WHEN @rating = 1 THEN 'Bad'
-    ELSE 'Invalid Rating'
-    END
-    RETURN @category
-END;
-GO
-
---- 7. About Manager's Special Functionalities
-
-DROP FUNCTION IF EXISTS dbo.CalculateRevenuePerHour;
-GO
-CREATE FUNCTION dbo.CalculateRevenuePerHour ( @event_revenue FLOAT, @event_start_time DATETIME, @event_end_time DATETIME)
+CREATE FUNCTION GetRevenueByClertID
+    (@clerk_id INT)
 RETURNS FLOAT
 AS
 BEGIN
-	DECLARE @duration FLOAT
-	DECLARE @revenuePerHour FLOAT
+    DECLARE @revenue FLOAT;
 
-	SET @duration = DATEDIFF(HOUR, @event_start_time, @event_end_time)
-	IF @duration = 0
-		SET @revenuePerHour = 0
-	ELSE
-		SET @revenuePerHour = @event_revenue / @duration
+    SELECT @revenue = SUM(s.price)
+    FROM schedules s
+    JOIN tickets t on s.schedule_id = t.schedule_id
+    WHERE t.user_id = @clerk_id AND t.ticket_status = 'Booked';
+    
+    RETURN @revenue;
+END;
+GO
 
-	RETURN @revenuePerHour
-END
-*/
+DROP FUNCTION IF EXISTS GetRevenueByGenreID;
+GO
+CREATE FUNCTION GetRevenueByGenreID
+    (@genre_id INT)
+RETURNS FLOAT
+AS
+BEGIN
+    DECLARE @revenue FLOAT;
 
+    SELECT @revenue = SUM(s.price)
+    FROM schedules s
+    JOIN tickets t on s.schedule_id = t.schedule_id
+    JOIN movies_genres mg on s.movie_id = mg.movie_id
+    WHERE mg.genre_id = @genre_id AND t.ticket_status = 'Booked';
+    
+    RETURN @revenue;
+END;
+GO
+
+DROP FUNCTION IF EXISTS GetRevenueByActorID;
+GO
+CREATE FUNCTION GetRevenueByActorID
+    (@actor_id INT)
+RETURNS FLOAT
+AS
+BEGIN
+    DECLARE @revenue FLOAT;
+
+    SELECT @revenue = SUM(s.price)
+    FROM schedules s
+    JOIN tickets t on s.schedule_id = t.schedule_id
+    JOIN movies_actors ma on s.movie_id = ma.movie_id
+    WHERE ma.actor_id = @actor_id AND t.ticket_status = 'Booked';
+    
+    RETURN @revenue;
+END;
+GO
 
 USE master;
 GO
