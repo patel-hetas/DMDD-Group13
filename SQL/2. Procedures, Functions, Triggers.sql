@@ -766,6 +766,60 @@ BEGIN
 END;
 GO
 
+--- 7. About Manager's Special Functionalities
+
+DROP PROCEDURE IF EXISTS sp_createEvent;
+GO
+CREATE PROCEDURE sp_createEvent -- Create Event
+    @name VARCHAR(255),
+    @description TEXT,
+    @start_time DATETIME,
+    @end_time DATETIME,
+    @studio_id INT,
+    @manager_id INT,
+    @event_revenue FLOAT,
+    @event_id INT OUTPUT
+AS
+BEGIN
+    INSERT INTO events (event_name, event_description, event_start_time, event_end_time, studio_id, manager_id, event_revenue)
+    VALUES (@name, @description, @start_time, @end_time, @studio_id, @manager_id, @event_revenue);
+
+    SET @event_id = SCOPE_IDENTITY();
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_modifyEvent;
+GO
+CREATE PROCEDURE sp_modifyEvent -- Modify Event
+    @event_id INT,
+    @name VARCHAR(255),
+    @description TEXT,
+    @start_time DATETIME,
+    @end_time DATETIME,
+    @studio_id INT,
+    @manager_id INT,
+    @event_revenue FLOAT
+AS
+BEGIN
+    UPDATE events
+    SET event_name = @name, event_description = @description, event_start_time = @start_time, event_end_time = @end_time, studio_id = @studio_id, manager_id = @manager_id, event_revenue = @event_revenue
+    WHERE event_id = @event_id;
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_deleteEvent;
+GO
+CREATE PROCEDURE sp_deleteEvent -- Delete Event
+    @event_id INT
+AS
+BEGIN
+    DELETE FROM events
+    WHERE event_id = @event_id;
+END;
+GO
+
+
+
 /*
 -- Stored Procedure to add a New Movie
 DROP PROCEDURE IF EXISTS sp_BookTicket;
