@@ -668,6 +668,103 @@ BEGIN
 END;
 GO
 
+--- 5. About Customer's Movie Reviews
+
+DROP PROCEDURE IF EXISTS sp_createReview;
+GO
+CREATE PROCEDURE sp_createReview -- Create Review
+    @customer_id INT,
+    @movie_id INT,
+    @rating INT,
+    @comment TEXT,
+    @dateAndTime DATETIME
+AS
+BEGIN
+    IF NOT (@rating BETWEEN 1 AND 5)
+    BEGIN
+        RAISERROR('Rating must be between 1 and 5', 16, 1);
+        RETURN;
+    END
+
+    INSERT INTO customer_MovieReviews (customer_id, movie_id, rating, comment, dateAndTime)
+    VALUES (@customer_id, @movie_id, @rating, @comment, @dateAndTime);
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_modifyReview;
+GO
+CREATE PROCEDURE sp_modifyReview -- Modify Review
+    @review_id INT,
+    @customer_id INT,
+    @movie_id INT,
+    @rating INT,
+    @comment TEXT,
+    @dateAndTime DATETIME
+AS
+BEGIN
+    IF NOT (@rating BETWEEN 1 AND 5)
+    BEGIN
+        RAISERROR('Rating must be between 1 and 5', 16, 1);
+        RETURN;
+    END
+
+    UPDATE customer_MovieReviews
+    SET customer_id = @customer_id, movie_id = @movie_id, rating = @rating, comment = @comment, dateAndTime = @dateAndTime
+    WHERE id = @review_id;
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_deleteReview;
+GO
+CREATE PROCEDURE sp_deleteReview -- Delete Review
+    @review_id INT
+AS
+BEGIN
+    DELETE FROM customer_MovieReviews
+    WHERE id = @review_id;
+END;
+GO
+
+--- 6. About Customer's Feedback
+
+DROP PROCEDURE IF EXISTS sp_createFeedback;
+GO
+CREATE PROCEDURE sp_createFeedback -- Create Feedback
+    @customer_id INT,
+    @comment VARCHAR(255),
+    @dateAndTime DATETIME
+AS
+BEGIN
+    INSERT INTO customer_feedbacks (customer_id, comment, dateAndTime)
+    VALUES (@customer_id, @comment, @dateAndTime);
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_modifyFeedback;
+GO
+CREATE PROCEDURE sp_modifyFeedback -- Modify Feedback
+    @feedback_id INT,
+    @customer_id INT,
+    @comment VARCHAR(255),
+    @dateAndTime DATETIME
+AS
+BEGIN
+    UPDATE customer_feedbacks
+    SET customer_id = @customer_id, comment = @comment, dateAndTime = @dateAndTime
+    WHERE id = @feedback_id;
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_deleteFeedback;
+GO
+CREATE PROCEDURE sp_deleteFeedback -- Delete Feedback
+    @feedback_id INT
+AS
+BEGIN
+    DELETE FROM customer_feedbacks
+    WHERE id = @feedback_id;
+END;
+GO
 
 /*
 -- Stored Procedure to add a New Movie

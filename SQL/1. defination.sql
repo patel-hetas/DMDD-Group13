@@ -164,7 +164,7 @@ CREATE TABLE customer_feedbacks (
     id INT PRIMARY KEY IDENTITY(1,1),
     customer_id INT FOREIGN KEY (customer_id) REFERENCES users_customers(customer_id),
     comment VARCHAR(255) NOT NULL,
-    dateAndTime DATETIME NOT NULL
+    dateAndTime DATETIME NOT NULL DEFAULT GETDATE()
 );
 
 DROP TABLE IF EXISTS customer_MovieReviews;
