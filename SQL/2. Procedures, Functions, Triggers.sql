@@ -308,9 +308,6 @@ BEGIN
 END;
 GO
 
-USE master;
-GO
-
 
 --- 3. About Studios and Seats
 
@@ -412,6 +409,267 @@ END;
 GO
 
 
+--- 4. About Schedule, Tickets, and Transactions
+
+--- 4.1 About Schedules
+
+DROP PROCEDURE IF EXISTS sp_createSchedule;
+GO
+CREATE PROCEDURE sp_createSchedule -- Create Schedule
+    @movie_id INT,
+    @studio_id INT,
+    @start_time DATETIME,
+    @end_time DATETIME,
+    @price FLOAT,
+    @schedule_id INT OUTPUT
+AS
+BEGIN
+    INSERT INTO schedules (movie_id, studio_id, start_time, end_time, price)
+    VALUES (@movie_id, @studio_id, @start_time, @end_time, @price);
+
+    SET @schedule_id = SCOPE_IDENTITY();
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_modifySchedule;
+GO
+CREATE PROCEDURE sp_modifySchedule -- Modify Schedule
+    @schedule_id INT,
+    @movie_id INT,
+    @studio_id INT,
+    @start_time DATETIME,
+    @end_time DATETIME,
+    @price FLOAT
+AS
+BEGIN
+    UPDATE schedules
+    SET movie_id = @movie_id, studio_id = @studio_id, start_time = @start_time, end_time = @end_time, price = @price
+    WHERE schedule_id = @schedule_id;
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_deleteSchedule;
+GO
+CREATE PROCEDURE sp_deleteSchedule -- Delete Schedule
+    @schedule_id INT
+AS
+BEGIN
+    DELETE FROM schedules
+    WHERE schedule_id = @schedule_id;
+END;
+GO
+
+--- 4.2 About Tickets
+
+DROP PROCEDURE IF EXISTS sp_createTicket;
+GO
+CREATE PROCEDURE sp_createTicket -- Create Ticket
+    @schedule_id INT,
+    @seat_id INT,
+    @user_id INT,
+    @ticket_id INT OUTPUT
+AS
+BEGIN
+    DECLARE @ticket_status VARCHAR(255);
+    SET @ticket_status = 'Available';
+
+    INSERT INTO tickets (schedule_id, seat_id, user_id, ticket_status)
+    VALUES (@schedule_id, @seat_id, @user_id, @ticket_status);
+
+    SET @ticket_id = SCOPE_IDENTITY();
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_modifyTicket;
+GO
+CREATE PROCEDURE sp_modifyTicket -- Modify Ticket
+    @ticket_id INT,
+    @schedule_id INT,
+    @seat_id INT,
+    @user_id INT,
+    @ticket_status VARCHAR(255),
+    @payment_id INT
+AS
+BEGIN
+    UPDATE tickets
+    SET schedule_id = @schedule_id, seat_id = @seat_id, user_id = @user_id, ticket_status = @ticket_status, payment_id = @payment_id
+    WHERE ticket_id = @ticket_id;
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_deleteTicket;
+GO
+CREATE PROCEDURE sp_deleteTicket -- Delete Ticket
+    @ticket_id INT
+AS
+BEGIN
+    DELETE FROM tickets
+    WHERE ticket_id = @ticket_id;
+END;
+GO
+
+-- Generate Tickets Once a Movie Schedule is Released
+DROP TRIGGER IF EXISTS trg_createTicketWhenScheduleIsCreated;
+GO
+CREATE TRIGGER trg_createTicketWhenScheduleIsCreated
+ON schedules
+AFTER INSERT
+AS
+BEGIN
+    DECLARE @schedule_id INT;
+    DECLARE @studio_id INT;
+    DECLARE @seat_id INT;
+    DECLARE @user_id INT;
+    DECLARE @ticket_id INT;
+
+    SELECT @schedule_id = schedule_id, @studio_id = studio_id
+    FROM inserted;
+
+    INSERT INTO tickets (schedule_id, seat_id, user_id, ticket_status)
+    SELECT @schedule_id, seat_id, NULL, 'Available'
+    FROM seats
+    WHERE studio_id = @studio_id;
+END;
+GO
+
+
+DROP TRIGGER IF EXISTS trg_cancelTicketWhenScheduleIsDeleted;
+GO
+CREATE TRIGGER trg_cancelTicketWhenScheduleIsDeleted
+ON schedules
+AFTER DELETE
+AS
+BEGIN
+    DECLARE @schedule_id INT;
+
+    SELECT @schedule_id = schedule_id
+    FROM deleted;
+
+    UPDATE tickets
+    SET ticket_status = 'Cancelled'
+    WHERE schedule_id = @schedule_id;
+END;
+GO
+
+--- 4.3 About Transactions
+
+-- Create an empty transaction with no money yet
+DROP PROCEDURE IF EXISTS sp_createTransaction;
+GO
+CREATE PROCEDURE sp_createTransaction -- Create Transaction
+    @user_id INT,
+    @payment_method VARCHAR(255),
+    @payment_id INT OUTPUT
+AS
+BEGIN
+    INSERT INTO transactions (user_id, payment_method)
+    VALUES (@user_id, @payment_method);
+
+    SET @payment_id = SCOPE_IDENTITY();
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_modifyTransaction;
+GO
+CREATE PROCEDURE sp_modifyTransaction -- Modify Transaction
+    @payment_id INT,
+    @user_id INT,
+    @amount FLOAT,
+    @payment_method VARCHAR(255)
+AS
+BEGIN
+    UPDATE transactions
+    SET user_id = @user_id, amount = @amount, payment_method = @payment_method
+    WHERE payment_id = @payment_id;
+END;
+GO
+
+
+--- 4.4 About Booking Tickets (dealing with transactions and tickets)
+
+DROP PROCEDURE IF EXISTS sp_associateTransactionWithTicket_alsoIncreaseTheAmount;
+GO
+CREATE PROCEDURE sp_associateTransactionWithTicket_alsoIncreaseTheAmount -- Associate Transaction with Ticket
+    @ticket_id INT,
+    @payment_id INT
+AS
+BEGIN
+    DECLARE @amount FLOAT;
+    SELECT @amount = price
+    FROM schedules
+    WHERE schedule_id = (SELECT schedule_id FROM tickets WHERE ticket_id = @ticket_id);
+
+    UPDATE transactions
+    SET amount = amount + @amount
+    WHERE payment_id = @payment_id;
+
+    UPDATE tickets
+    SET payment_id = @payment_id
+    WHERE ticket_id = @ticket_id;
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_bookTicket;
+GO
+CREATE PROCEDURE sp_bookTicket -- Book Ticket
+    @ticket_id INT,
+    @payment_id INT,
+    @user_id INT,
+    @payment_method VARCHAR(255)
+AS
+BEGIN
+    IF @payment_id IS NULL
+    BEGIN
+        EXEC sp_createTransaction @user_id, @payment_method, @payment_id=@payment_id OUTPUT;
+    END
+    
+    EXEC sp_associateTransactionWithTicket_alsoIncreaseTheAmount @ticket_id, @payment_id;
+
+    UPDATE tickets
+    SET ticket_status = 'Booked', payment_id = @payment_id
+    WHERE ticket_id = @ticket_id;
+END;
+GO
+
+DROP PROCEDURE IF EXISTS sp_cancelTicket;
+GO
+CREATE PROCEDURE sp_cancelTicket -- Cancel Ticket
+    @ticket_id INT
+AS
+BEGIN
+    DECLARE @payment_id INT;
+    SELECT @payment_id = payment_id
+    FROM tickets
+    WHERE ticket_id = @ticket_id;
+
+    UPDATE tickets
+    SET ticket_status = 'Cancelled', payment_id = NULL
+    WHERE ticket_id = @ticket_id;
+
+    DECLARE @current_amount FLOAT;
+    SELECT @current_amount = amount
+    FROM transactions
+    WHERE payment_id = @payment_id;
+
+    DECLARE @new_amount FLOAT;
+    SELECT @new_amount = @current_amount - (SELECT price FROM schedules WHERE schedule_id = (SELECT schedule_id FROM tickets WHERE ticket_id = @ticket_id))
+
+    IF @new_amount <= 0
+    BEGIN
+        DELETE FROM transactions
+        WHERE payment_id = @payment_id;
+    END
+    ELSE
+    BEGIN
+        UPDATE transactions
+        SET amount = @new_amount
+        WHERE payment_id = @payment_id;
+    END
+END;
+GO
+
+
+/*
 -- Stored Procedure to add a New Movie
 DROP PROCEDURE IF EXISTS sp_BookTicket;
 GO
@@ -483,32 +741,6 @@ GO
 
 
 -- ================================================Triggers==================================================
-
--- Generate Tickets Once a Movie Schedule is Released
-DROP TRIGGER IF EXISTS trg_GenerateTicketsOnNewSchedule;
-GO
-CREATE TRIGGER trg_GenerateTicketsOnNewSchedule
-ON schedules
-AFTER INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- For each new schedule, insert a new ticket for each seat in the studio
-    INSERT INTO tickets (schedule_id, seat_id, user_id, ticket_status)
-    SELECT 
-        i.schedule_id, 
-        s.seat_id, 
-        NULL, 
-        'Available'
-    FROM 
-        inserted i
-        CROSS JOIN seats s
-    WHERE 
-        s.studio_id = i.studio_id;
-END;
-GO
-
 
 -- Invalidate Tickets Upon Movie Schedule Cancellation
 DROP TRIGGER IF EXISTS trg_InvalidateTicketsOnScheduleCancellation;
@@ -671,3 +903,8 @@ BEGIN
 
 	RETURN @revenuePerHour
 END
+*/
+
+
+USE master;
+GO

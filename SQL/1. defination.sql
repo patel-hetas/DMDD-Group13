@@ -131,7 +131,7 @@ DROP TABLE IF EXISTS transactions;
 CREATE TABLE transactions (
     payment_id INT PRIMARY KEY IDENTITY(1,1),
     user_id INT FOREIGN KEY (user_id) REFERENCES users(id),
-    amount FLOAT NOT NULL,
+    amount FLOAT NOT NULL DEFAULT 0.0 CONSTRAINT amount_ck CHECK (amount >= 0),
     payment_method VARCHAR(255) NOT NULL CONSTRAINT payment_method_ck CHECK (payment_method IN ('Credit Card', 'Debit Card', 'Cash')),
     payment_time DATETIME NOT NULL DEFAULT GETDATE()
 );
