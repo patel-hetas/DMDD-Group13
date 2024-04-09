@@ -40,9 +40,9 @@ CREATE TABLE users (
     id INT PRIMARY KEY IDENTITY(1,1),
     username VARCHAR(50) NOT NULL UNIQUE,
     displayName VARCHAR(50) NOT NULL,
-    password_encrypted VARBINARY NOT NULL,
+    password_encrypted VARBINARY(512) NOT NULL,
     phone VARCHAR(15) NOT NULL,
-    [role] VARCHAR(25) NOT NULL CONSTRAINT role_ck CHECK (role IN ('Customer', 'Clerk', 'Manager')),
+    [role] VARCHAR(25) NOT NULL, -- No CHECK constraint here
     isActivated BIT NOT NULL DEFAULT 1 -- 0: not activated, 1: activated
 );
 
@@ -50,6 +50,7 @@ DROP TABLE IF EXISTS users_customers;
 CREATE TABLE users_customers (
     customer_id INT PRIMARY KEY FOREIGN KEY (customer_id) REFERENCES users(id),
     isVIP BIT NOT NULL DEFAULT 0, -- 0: not VIP, 1: VIP
+    dateOfBirth DATE NOT NULL, -- New column: Date of birth
     dateOfMembership DATE NOT NULL DEFAULT GETDATE()
 );
 
@@ -76,7 +77,7 @@ CREATE TABLE movies (
     movie_id INT PRIMARY KEY IDENTITY(1,1),
     movie_name VARCHAR(255) NOT NULL,
     duration INT NOT NULL, -- in minutes
-    age_rating VARCHAR(10) NOT NULL CONSTRAINT age_rating_ck CHECK (age_rating IN ('G', 'PG', 'PG-13', 'R', 'NC-17'))
+    age_rating VARCHAR(10) NOT NULL, -- No CHECK constraint here
 );
 
 --- 2.1 About Actors
@@ -113,7 +114,7 @@ DROP TABLE IF EXISTS studios;
 CREATE TABLE studios (
     studio_id INT PRIMARY KEY IDENTITY(1,1),
     studio_name VARCHAR(255) NOT NULL,
-    screen_type VARCHAR(255) NOT NULL CONSTRAINT screen_type_ck CHECK (screen_type IN ('2D', '3D', '4D')),
+    screen_type VARCHAR(255) NOT NULL, -- No CHECK constraint here
 );
 
 --- 3.1 About Seats
@@ -131,9 +132,10 @@ DROP TABLE IF EXISTS transactions;
 CREATE TABLE transactions (
     payment_id INT PRIMARY KEY IDENTITY(1,1),
     user_id INT FOREIGN KEY (user_id) REFERENCES users(id),
-    amount FLOAT NOT NULL DEFAULT 0.0 CONSTRAINT amount_ck CHECK (amount >= 0),
-    payment_method VARCHAR(255) NOT NULL CONSTRAINT payment_method_ck CHECK (payment_method IN ('Credit Card', 'Debit Card', 'Cash')),
-    payment_time DATETIME NOT NULL DEFAULT GETDATE()
+    amount FLOAT NOT NULL DEFAULT 0.0,
+    payment_method VARCHAR(255) NOT NULL, -- No CHECK constraint here
+    payment_time DATETIME NOT NULL DEFAULT GETDATE(),
+    payment_status VARCHAR(255) NOT NULL DEFAULT 'Pending'
 );
 
 --- 5. About Schedules and Tickets
@@ -153,7 +155,7 @@ CREATE TABLE tickets (
     schedule_id INT FOREIGN KEY (schedule_id) REFERENCES schedules(schedule_id),
     seat_id INT FOREIGN KEY (seat_id) REFERENCES seats(seat_id),
     user_id INT FOREIGN KEY (user_id) REFERENCES users(id), -- if customer_id, then it is booked by customer, if clerk_id, then it is booked by clerk, if manager_id, then it is booked by manager
-    ticket_status VARCHAR(255) NOT NULL CONSTRAINT ticket_status_ck CHECK (ticket_status IN ('Booked', 'Cancelled', 'Available')),
+    ticket_status VARCHAR(255) NOT NULL DEFAULT 'Available',
     payment_id INT FOREIGN KEY (payment_id) REFERENCES transactions(payment_id),
 );
 
@@ -172,7 +174,7 @@ CREATE TABLE customer_MovieReviews (
     id INT PRIMARY KEY IDENTITY(1,1),
     customer_id INT FOREIGN KEY (customer_id) REFERENCES users_customers(customer_id),
     movie_id INT FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
-    rating INT NOT NULL CONSTRAINT rating_ck CHECK (rating BETWEEN 1 AND 5),
+    rating INT NOT NULL, -- No CHECK constraint here
     comment TEXT,
     dateAndTime DATETIME NOT NULL
 );
@@ -189,41 +191,3 @@ CREATE TABLE events (
     event_revenue FLOAT NOT NULL,
     manager_id INT FOREIGN KEY (manager_id) REFERENCES users_managers(manager_id)
 );
-
-
--- ========================Non Clustered Index====================================
-
--- Index for movies by name for faster search
-CREATE NONCLUSTERED INDEX IDX_MovieName
-ON movies (movie_name);
-GO
-
-
--- Index for tickets by status for quick filtering
-CREATE NONCLUSTERED INDEX IDX_TicketStatus
-ON tickets (ticket_status);
-GO
-
-
--- Index for transactions by user for efficient lookup
-CREATE NONCLUSTERED INDEX IDX_Transactions_User
-ON transactions (user_id);
-GO
-
-
--- Index on Tickets by Schedule ID to Quickly Find All Tickets for a Given Schedule
-CREATE NONCLUSTERED INDEX IDX_TicketsBySchedule
-ON tickets (schedule_id);
-GO
-
-
--- Index on Movie Schedules by Movie ID for Efficient Schedule Lookups
-CREATE NONCLUSTERED INDEX IDX_ScheduleByMovie
-ON schedules (movie_id);
-GO
-
-
--- Index on Users by Role for Quick Access Control Checks
-CREATE NONCLUSTERED INDEX IDX_UserRole
-ON users ([role]);
-GO

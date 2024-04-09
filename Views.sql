@@ -39,45 +39,23 @@ GROUP BY
 GO
 
 
--- View 3: Report on Customer Feedback
--- This view aggregates customer feedback, which can be important for customer service and quality control.
-CREATE VIEW vw_CustomerFeedbackSummary AS
+-- View 3: Available seats for a schedule
+-- This view provides a daily summary of ticket availabilty for a particular schedule
+CREATE VIEW vw_AvailableSeatsForSchedules AS
 SELECT 
-    u.displayName,
-    uc.isVIP,
-    COUNT(f.id) AS TotalFeedback,
-    AVG(mr.rating) AS AverageMovieRating
+    t.schedule_id,
+    s.studio_id,
+    COUNT(*) AS available_seat_count
 FROM 
-    users_customers uc
-JOIN 
-    users u ON uc.customer_id = u.id
+    seats s
 LEFT JOIN 
-    customer_feedbacks f ON uc.customer_id = f.customer_id
-LEFT JOIN 
-    customer_MovieReviews mr ON uc.customer_id = mr.customer_id
+    tickets t ON s.seat_id = t.seat_id AND t.ticket_status = 'Available'
 GROUP BY 
-    u.displayName, uc.isVIP;
+    t.schedule_id, s.studio_id;
 GO
 
 
-
--- View 4: Report on Daily Sales
--- This view provides a daily summary of ticket sales, including total revenue and the number 
--- of tickets sold per day. It's useful for financial tracking and trend analysis.
-CREATE VIEW vw_DailySalesReport AS
-SELECT 
-    CAST(t.payment_time AS DATE) AS SaleDate,
-    COUNT(t.payment_id) AS TotalTicketsSold,
-    SUM(t.amount) AS TotalRevenue
-FROM 
-    transactions t
-GROUP BY 
-    CAST(t.payment_time AS DATE);
-GO
-
-
-
--- View 5: Most Popular Movies
+-- View 4: Most Popular Movies
 -- This view identifies the most popular movies based on the number of tickets sold. 
 -- This can help in marketing and promotional efforts, as well as in planning future screenings.
 CREATE VIEW vw_MostPopularMovies AS
@@ -94,6 +72,4 @@ WHERE
     t.ticket_status = 'Booked'
 GROUP BY 
     m.movie_name
-ORDER BY 
-    TicketsSold DESC;
 GO

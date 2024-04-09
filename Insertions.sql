@@ -1,50 +1,14 @@
 USE master;
 GO
-DROP DATABASE IF EXISTS ttms2;
+DROP DATABASE IF EXISTS ttms;
 GO
-CREATE DATABASE ttms2;
+CREATE DATABASE ttms;
 GO
-USE ttms2;
-GO
-
---- 0. About Encryption
-IF EXISTS (
-    SELECT name KeyName,
-    symmetric_key_id KeyID,
-    key_length KeyLength,
-    algorithm_desc KeyAlgorithm
-    FROM sys.symmetric_keys
-)
-BEGIN
-    DROP SYMMETRIC KEY UserPasswordKey;
-    DROP CERTIFICATE UserPasswordCertificate;
-    DROP MASTER KEY;
-END
-
-CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'v%c*S_%&1CLH%$Srr-FvQ6cCN~>hVh_Jp0VKaSnc7/lWeBz{V,[>IRNMj*]kPFMH';
-
- 
-CREATE CERTIFICATE UserPasswordCertificate
-    WITH SUBJECT = 'User Passwords For TTMS';
-GO
-
-CREATE SYMMETRIC KEY UserPasswordKey
-    WITH ALGORITHM = AES_256
-    ENCRYPTION BY CERTIFICATE UserPasswordCertificate;
+USE ttms;
 GO
 
 --- 1. About Users
 
-DROP TABLE IF EXISTS users;
-CREATE TABLE users (
-    id INT PRIMARY KEY IDENTITY(1,1),
-    username VARCHAR(50) NOT NULL UNIQUE,
-    displayName VARCHAR(50) NOT NULL,
-    password_encrypted VARBINARY(512) NOT NULL,
-    phone VARCHAR(15) NOT NULL,
-    [role] VARCHAR(25) NOT NULL CONSTRAINT role_ck CHECK (role IN ('Customer', 'Clerk', 'Manager')),
-    isActivated BIT NOT NULL DEFAULT 1 -- 0: not activated, 1: activated
-);
 OPEN SYMMETRIC KEY UserPasswordKey 
 DECRYPTION BY CERTIFICATE UserPasswordCertificate;
 
@@ -95,92 +59,45 @@ INSERT INTO users (username, displayName, password_encrypted, phone, [role]) VAL
 -- Close the symmetric key after use
 CLOSE SYMMETRIC KEY UserPasswordKey;
 
-
-
-
-
-SELECT * FROM users
-
-
-
-
-DROP TABLE IF EXISTS users_customers;
-CREATE TABLE users_customers (
-    customer_id INT PRIMARY KEY FOREIGN KEY (customer_id) REFERENCES users(id),
-    isVIP BIT NOT NULL DEFAULT 0, -- 0: not VIP, 1: VIP
-    dateOfMembership DATE NOT NULL DEFAULT GETDATE()
-);
-
 INSERT INTO users_customers (customer_id, isVIP, dateOfMembership) VALUES
-(5, 0, '2023-04-01'), -- Non-VIP, Membership starts April 1, 2023
-(6, 1, '2023-04-02'), -- VIP, Membership starts April 2, 2023
-(7, 0, '2023-04-03'),
-(8, 1, '2023-04-04'),
-(9, 0, '2023-04-05'),
-(10, 1, '2023-04-06'),
-(11, 0, '2023-04-07'),
-(12, 1, '2023-04-08'),
-(13, 0, '2023-04-09'),
-(14, 1, '2023-04-10'); -- Alternating VIP status for demonstration
-
-SELECT * FROM users_customers
-
-DROP TABLE IF EXISTS users_managers;
-CREATE TABLE users_managers (
-    manager_id INT PRIMARY KEY FOREIGN KEY (manager_id) REFERENCES users(id),
-    salary FLOAT NOT NULL,
-    dateOfEmployment DATE NOT NULL DEFAULT GETDATE()
-);
+(1, 0, '2023-04-01'), -- Non-VIP, Membership starts April 1, 2023
+(2, 1, '2023-04-02'), -- VIP, Membership starts April 2, 2023
+(3, 0, '2023-04-03'),
+(4, 1, '2023-04-04'),
+(5, 0, '2023-04-05'),
+(6, 1, '2023-04-06'),
+(7, 0, '2023-04-07'),
+(8, 1, '2023-04-08'),
+(9, 0, '2023-04-09'),
+(10, 1, '2023-04-10'); -- Alternating VIP status for demonstration
 
 INSERT INTO users_managers (manager_id, salary, dateOfEmployment) VALUES
-(25, 60000, '2023-01-01'),
-(26, 62000, '2023-01-02'),
-(27, 63000, '2023-01-03'),
-(28, 64000, '2023-01-04'),
-(29, 65000, '2023-01-05'),
-(30, 66000, '2023-01-06'),
-(31, 67000, '2023-01-07'),
-(32, 68000, '2023-01-08'),
-(33, 69000, '2023-01-09'),
-(34, 70000, '2023-01-10');
+(21, 60000, '2023-01-01'),
+(22, 62000, '2023-01-02'),
+(23, 63000, '2023-01-03'),
+(24, 64000, '2023-01-04'),
+(25, 65000, '2023-01-05'),
+(26, 66000, '2023-01-06'),
+(27, 67000, '2023-01-07'),
+(28, 68000, '2023-01-08'),
+(29, 69000, '2023-01-09'),
+(30, 70000, '2023-01-10');
 
 
-SELECT * FROM users_managers
-
-
-DROP TABLE IF EXISTS users_clerks;
-CREATE TABLE users_clerks (
-    customer_id INT PRIMARY KEY FOREIGN KEY (customer_id) REFERENCES users(id),
-    dateOfEmployment DATE NOT NULL DEFAULT GETDATE(),
-    salary FLOAT NOT NULL,
-    answersToManagerID INT FOREIGN KEY (answersToManagerID) REFERENCES users_managers(manager_id)
-);
-
-INSERT INTO users_clerks (customer_id, dateOfEmployment, salary, answersToManagerID) VALUES
-(5, '2023-02-01', 45000, 25),
-(6, '2023-02-02', 45500, 26),
-(7, '2023-02-03', 46000, 27),
-(8, '2023-02-04', 46500, 28),
-(9, '2023-02-05', 47000, 29),
-(10, '2023-02-06', 47500, 30),
-(11, '2023-02-07', 48000, 31),
-(12, '2023-02-08', 48500, 32),
-(13, '2023-02-09', 49000, 33),
-(14, '2023-02-10', 49500, 34);
-
-
-SELECT * FROM users_clerks
+INSERT INTO users_clerks (clerk_id, dateOfEmployment, salary, answersToManagerID) VALUES
+(11, '2023-02-01', 45000, 21),
+(12, '2023-02-02', 45500, 22),
+(13, '2023-02-03', 46000, 23),
+(14, '2023-02-04', 46500, 24),
+(15, '2023-02-05', 47000, 25),
+(16, '2023-02-06', 47500, 26),
+(17, '2023-02-07', 48000, 27),
+(18, '2023-02-08', 48500, 28),
+(19, '2023-02-09', 49000, 29),
+(20, '2023-02-10', 49500, 30);
 
 
 --- 2. About Movies
-DROP TABLE IF EXISTS movies;
-CREATE TABLE movies (
-    movie_id INT PRIMARY KEY IDENTITY(1,1),
-    movie_name VARCHAR(255) NOT NULL,
-    duration INT NOT NULL, -- in minutes
-    age_rating VARCHAR(10) NOT NULL CONSTRAINT age_rating_ck CHECK (age_rating IN ('G', 'PG', 'PG-13', 'R', 'NC-17'))
-);
-
 INSERT INTO movies (movie_name, duration, age_rating) VALUES
 ('Inception', 148, 'PG-13'),
 ('The Shawshank Redemption', 142, 'R'),
@@ -194,15 +111,7 @@ INSERT INTO movies (movie_name, duration, age_rating) VALUES
 ('Interstellar', 169, 'PG-13');
 
 
-SELECT * from movies
-
 --- 2.1 About Actors
-DROP TABLE IF EXISTS actors;
-CREATE TABLE actors (
-    actor_id INT PRIMARY KEY IDENTITY(1,1),
-    actor_name VARCHAR(255) NOT NULL,
-    bio TEXT
-);
 
 INSERT INTO actors (actor_name, bio) VALUES
 ('Leonardo DiCaprio', 'An American actor known for his versatile performances in various film genres.'),
@@ -216,15 +125,6 @@ INSERT INTO actors (actor_name, bio) VALUES
 ('Natalie Portman', 'An actress and filmmaker with dual Israeli and American citizenship, known for her versatility and roles in both blockbusters and independent films.'),
 ('Christian Bale', 'An English actor known for his intense method acting and ability to physically transform for his roles.');
 
-
-SELECT * FROM actors
-
-DROP TABLE IF EXISTS movies_actors;
-CREATE TABLE movies_actors (
-    movie_id INT FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
-    actor_id INT FOREIGN KEY (actor_id) REFERENCES actors(actor_id),
-    PRIMARY KEY (movie_id, actor_id)
-);
 
 INSERT INTO movies_actors (movie_id, actor_id) VALUES
 -- Assuming 'Inception' has movie_id 1 and 'Leonardo DiCaprio' has actor_id 1
@@ -243,15 +143,7 @@ INSERT INTO movies_actors (movie_id, actor_id) VALUES
 (10, 10); -- 'The Machinist' with 'Christian Bale'
 
 
-SELECT * FROM movies_actors
-
 --- 2.2 About Genres
-DROP TABLE IF EXISTS genres;
-CREATE TABLE genres (
-    genre_id INT PRIMARY KEY IDENTITY(1,1),
-    genre_name VARCHAR(255) NOT NULL
-);
-
 INSERT INTO genres (genre_name) VALUES
 ('Action'),
 ('Comedy'),
@@ -263,16 +155,6 @@ INSERT INTO genres (genre_name) VALUES
 ('Thriller'),
 ('Documentary'),
 ('Animation');
-
-
-select * from genres
-
-DROP TABLE IF EXISTS movies_genres;
-CREATE TABLE movies_genres (
-    movie_id INT FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
-    genre_id INT FOREIGN KEY (genre_id) REFERENCES genres(genre_id),
-    PRIMARY KEY (movie_id, genre_id)
-);
 
 INSERT INTO movies_genres (movie_id, genre_id) VALUES
 -- Assuming 'Inception' is movie_id 1 and 'Science Fiction' is genre_id 7
@@ -297,17 +179,7 @@ INSERT INTO movies_genres (movie_id, genre_id) VALUES
 (10, 7);
 
 
-select * from movies_genres
-
-
 --- 3. About Studios
-DROP TABLE IF EXISTS studios;
-CREATE TABLE studios (
-    studio_id INT PRIMARY KEY IDENTITY(1,1),
-    studio_name VARCHAR(255) NOT NULL,
-    screen_type VARCHAR(255) NOT NULL CONSTRAINT screen_type_ck CHECK (screen_type IN ('2D', '3D', '4D')),
-);
-
 INSERT INTO studios (studio_name, screen_type) VALUES
 ('Grand Palace Cinema', '2D'),
 ('OrbitView Theater', '3D'),
@@ -320,18 +192,8 @@ INSERT INTO studios (studio_name, screen_type) VALUES
 ('Retro Film Center', '2D'),
 ('NextGen Cinematic Sphere', '4D');
 
-select * from studios
-
 
 --- 3.1 About Seats
-DROP TABLE IF EXISTS seats;
-CREATE TABLE seats (
-    seat_id INT PRIMARY KEY IDENTITY(1,1),
-    studio_id INT FOREIGN KEY (studio_id) REFERENCES studios(studio_id),
-    seat_row INT NOT NULL,
-    seat_column INT NOT NULL,
-);
-
 INSERT INTO seats (studio_id, seat_row, seat_column) VALUES
 -- For Studio 1
 (1, 1, 1), (1, 1, 2), (1, 1, 3), (1, 1, 4), (1, 1, 5), (1, 1, 6), (1, 1, 7), (1, 1, 8), (1, 1, 9), (1, 1, 10),
@@ -402,46 +264,22 @@ INSERT INTO seats (studio_id, seat_row, seat_column) VALUES
 (10, 5, 1), (10, 5, 2), (10, 5, 3), (10, 5, 4), (10, 5, 5), (10, 5, 6), (10, 5, 7), (10, 5, 8), (10, 5, 9), (10, 5, 10);
 
 
-
-select * from seats
-
 --- 4. About Transactions
-DROP TABLE IF EXISTS transactions;
-CREATE TABLE transactions (
-    payment_id INT PRIMARY KEY IDENTITY(1,1),
-    user_id INT FOREIGN KEY (user_id) REFERENCES users(id),
-    amount FLOAT NOT NULL,
-    payment_method VARCHAR(255) NOT NULL CONSTRAINT payment_method_ck CHECK (payment_method IN ('Credit Card', 'Debit Card', 'Cash')),
-    payment_time DATETIME NOT NULL DEFAULT GETDATE()
-);
 
-INSERT INTO transactions (user_id, amount, payment_method, payment_time) VALUES
-(5, 15.99, 'Credit Card', '2023-10-01 14:00:00'),
-(6, 9.99, 'Debit Card', '2023-10-01 14:30:00'),
-(7, 19.99, 'Cash', '2023-10-02 10:00:00'),
-(8, 12.99, 'Credit Card', '2023-10-02 11:00:00'),
-(9, 22.50, 'Debit Card', '2023-10-03 15:45:00'),
-(10, 18.25, 'Cash', '2023-10-04 09:30:00'),
-(11, 5.99, 'Credit Card', '2023-10-04 16:15:00'),
-(12, 29.99, 'Debit Card', '2023-10-05 17:00:00'),
-(13, 3.50, 'Cash', '2023-10-06 08:20:00'),
-(14, 10.00, 'Credit Card', '2023-10-07 13:50:00');
-
-
-select * from transactions
+INSERT INTO transactions (user_id, amount, payment_method, payment_time,payment_status) VALUES
+(5, 15.99, 'Credit Card', '2023-10-01 14:00:00','Pending'),
+(6, 9.99, 'Debit Card', '2023-10-01 14:30:00','Pending'),
+(7, 19.99, 'Cash', '2023-10-02 10:00:00','Pending'),
+(8, 12.99, 'Credit Card', '2023-10-02 11:00:00','Pending'),
+(9, 22.50, 'Debit Card', '2023-10-03 15:45:00','Pending'),
+(10, 18.25, 'Cash', '2023-10-04 09:30:00','Pending'),
+(11, 5.99, 'Credit Card', '2023-10-04 16:15:00','Pending'),
+(12, 29.99, 'Debit Card', '2023-10-05 17:00:00','Pending'),
+(13, 3.50, 'Cash', '2023-10-06 08:20:00','Pending'),
+(14, 10.00, 'Credit Card', '2023-10-07 13:50:00','Pending');
 
 
 --- 5. About Schedules and Tickets
-DROP TABLE IF EXISTS schedules;
-CREATE TABLE schedules (
-    schedule_id INT PRIMARY KEY IDENTITY(1,1),
-    movie_id INT FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
-    studio_id INT FOREIGN KEY (studio_id) REFERENCES studios(studio_id),
-    start_time DATETIME NOT NULL,
-    end_time DATETIME NOT NULL,
-    price FLOAT NOT NULL,
-);
-
 INSERT INTO schedules (movie_id, studio_id, start_time, end_time, price) VALUES
 (1, 1, '2023-10-10 12:00:00', '2023-10-10 14:30:00', 10.00),
 (2, 2, '2023-10-10 15:00:00', '2023-10-10 17:30:00', 12.50),
@@ -454,19 +292,6 @@ INSERT INTO schedules (movie_id, studio_id, start_time, end_time, price) VALUES
 (9, 4, '2023-10-14 12:00:00', '2023-10-14 14:10:00', 9.50),
 (10, 5, '2023-10-14 15:00:00', '2023-10-14 17:40:00', 14.00);
 
-
-select * from schedules
-
-
-DROP TABLE IF EXISTS tickets;
-CREATE TABLE tickets (
-    ticket_id INT PRIMARY KEY IDENTITY(1,1),
-    schedule_id INT FOREIGN KEY (schedule_id) REFERENCES schedules(schedule_id),
-    seat_id INT FOREIGN KEY (seat_id) REFERENCES seats(seat_id),
-    user_id INT FOREIGN KEY (user_id) REFERENCES users(id), -- if customer_id, then it is booked by customer, if clerk_id, then it is booked by clerk, if manager_id, then it is booked by manager
-    ticket_status VARCHAR(255) NOT NULL CONSTRAINT ticket_status_ck CHECK (ticket_status IN ('Booked', 'Cancelled', 'Available')),
-    payment_id INT FOREIGN KEY (payment_id) REFERENCES transactions(payment_id),
-);
 
 INSERT INTO tickets (schedule_id, seat_id, user_id, ticket_status, payment_id) VALUES
 (1, 1, 5, 'Booked', 1),
@@ -481,69 +306,36 @@ INSERT INTO tickets (schedule_id, seat_id, user_id, ticket_status, payment_id) V
 (5, 42, 14, 'Booked', 6);
 
 
-select * from tickets
-
 
 --- 6. About Customer's Special Functionalities
-DROP TABLE IF EXISTS customer_feedbacks;
-CREATE TABLE customer_feedbacks (
-    id INT PRIMARY KEY IDENTITY(1,1),
-    customer_id INT FOREIGN KEY (customer_id) REFERENCES users_customers(customer_id),
-    comment VARCHAR(255) NOT NULL,
-    dateAndTime DATETIME NOT NULL
-);
-
 INSERT INTO customer_feedbacks (customer_id, comment, dateAndTime) VALUES
-(5, 'Great movie experience, very comfortable seats!', '2023-10-12 14:30:00'),
-(6, 'The sound system was incredible, felt like being part of the movie.', '2023-10-13 16:45:00'),
-(7, 'Loved the friendly staff and the clean environment.', '2023-10-14 17:00:00'),
-(8, 'The selection of movies is fantastic. Found all my favorites and more.', '2023-10-15 18:20:00'),
-(9, 'Could use more variety in the concession stand.', '2023-10-16 19:30:00'),
-(10, 'Appreciate the attention to cleanliness in the restrooms.', '2023-10-17 20:00:00'),
-(11, 'Online ticketing was a breeze. Very user-friendly.', '2023-10-18 21:15:00'),
-(12, 'The 3D glasses were a bit uncomfortable and could be improved.', '2023-10-19 22:30:00'),
-(13, 'Excellent value for money, especially the combo deals.', '2023-10-20 23:45:00'),
-(14, 'More indie films, please! Love the selection but always looking for more.', '2023-10-21 08:00:00');
+(1, 'Great movie experience, very comfortable seats!', '2023-10-12 14:30:00'),
+(2, 'The sound system was incredible, felt like being part of the movie.', '2023-10-13 16:45:00'),
+(3, 'Loved the friendly staff and the clean environment.', '2023-10-14 17:00:00'),
+(4, 'The selection of movies is fantastic. Found all my favorites and more.', '2023-10-15 18:20:00'),
+(5, 'Could use more variety in the concession stand.', '2023-10-16 19:30:00'),
+(6, 'Appreciate the attention to cleanliness in the restrooms.', '2023-10-17 20:00:00'),
+(7, 'Online ticketing was a breeze. Very user-friendly.', '2023-10-18 21:15:00'),
+(8, 'The 3D glasses were a bit uncomfortable and could be improved.', '2023-10-19 22:30:00'),
+(9, 'Excellent value for money, especially the combo deals.', '2023-10-20 23:45:00'),
+(10, 'More indie films, please! Love the selection but always looking for more.', '2023-10-21 08:00:00');
 
-
-select * from customer_feedbacks
-
-DROP TABLE IF EXISTS customer_MovieReviews;
-CREATE TABLE customer_MovieReviews (
-    id INT PRIMARY KEY IDENTITY(1,1),
-    customer_id INT FOREIGN KEY (customer_id) REFERENCES users_customers(customer_id),
-    movie_id INT FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
-    rating INT NOT NULL CONSTRAINT rating_ck CHECK (rating BETWEEN 1 AND 5),
-    comment TEXT,
-    dateAndTime DATETIME NOT NULL
-);
 
 INSERT INTO customer_MovieReviews (customer_id, movie_id, rating, comment, dateAndTime) VALUES
-(5, 1, 5, 'Absolutely loved it! Brilliant storytelling and amazing visuals.', '2023-10-12 20:00:00'),
-(6, 2, 4, 'Great movie, but felt a bit long in parts. Still, highly recommend!', '2023-10-13 18:30:00'),
-(7, 3, 3, 'Good movie, but not what I was expecting. Worth a watch though.', '2023-10-14 19:45:00'),
-(8, 4, 5, 'A masterpiece. Acting and direction were top-notch.', '2023-10-15 17:15:00'),
-(9, 5, 4, 'Really enjoyed it, especially the soundtrack and the intense scenes.', '2023-10-16 20:30:00'),
-(10, 6, 2, 'Not my cup of tea. Found it a bit boring and predictable.', '2023-10-17 21:00:00'),
-(11,7, 5, 'An absolute thrill ride from start to finish. Must watch!', '2023-10-18 18:00:00'),
-(12, 8, 3, 'Decent watch but nothing groundbreaking. The plot was a bit thin.', '2023-10-19 22:15:00'),
-(13, 9, 4, 'Visually stunning and deeply emotional. The story stayed with me.', '2023-10-20 19:00:00'),
-(14, 10, 1, 'Disappointing. Expected a lot more based on the hype.', '2023-10-21 20:45:00');
+(1, 1, 5, 'Absolutely loved it! Brilliant storytelling and amazing visuals.', '2023-10-12 20:00:00'),
+(2, 2, 4, 'Great movie, but felt a bit long in parts. Still, highly recommend!', '2023-10-13 18:30:00'),
+(3, 3, 3, 'Good movie, but not what I was expecting. Worth a watch though.', '2023-10-14 19:45:00'),
+(4, 4, 5, 'A masterpiece. Acting and direction were top-notch.', '2023-10-15 17:15:00'),
+(5, 5, 4, 'Really enjoyed it, especially the soundtrack and the intense scenes.', '2023-10-16 20:30:00'),
+(6, 6, 2, 'Not my cup of tea. Found it a bit boring and predictable.', '2023-10-17 21:00:00'),
+(7,7, 5, 'An absolute thrill ride from start to finish. Must watch!', '2023-10-18 18:00:00'),
+(8, 8, 3, 'Decent watch but nothing groundbreaking. The plot was a bit thin.', '2023-10-19 22:15:00'),
+(9, 9, 4, 'Visually stunning and deeply emotional. The story stayed with me.', '2023-10-20 19:00:00'),
+(10, 10, 1, 'Disappointing. Expected a lot more based on the hype.', '2023-10-21 20:45:00');
 
-select * from customer_MovieReviews
 
 --- 7. About Manager's Special Functionalities
-DROP TABLE IF EXISTS events;
-CREATE TABLE events (
-    event_id INT PRIMARY KEY IDENTITY(1,1),
-    event_name VARCHAR(255) NOT NULL,
-    event_description TEXT,
-    event_start_time DATETIME NOT NULL,
-    event_end_time DATETIME NOT NULL,
-    studio_id INT FOREIGN KEY (studio_id) REFERENCES studios(studio_id),
-    event_revenue FLOAT NOT NULL,
-    manager_id INT FOREIGN KEY (manager_id) REFERENCES users_managers(manager_id)
-);
+
 
 INSERT INTO events (event_name, event_description, event_start_time, event_end_time, studio_id, event_revenue, manager_id) VALUES
 ('Sci-Fi Marathon', 'A weekend-long marathon of classic and new sci-fi movies.', '2023-11-05 10:00:00', '2023-11-07 22:00:00', 1, 5000.00, 25),
@@ -551,10 +343,3 @@ INSERT INTO events (event_name, event_description, event_start_time, event_end_t
 ('Family Fun Day', 'A day of family-friendly films and activities.', '2023-12-01 09:00:00', '2023-12-01 17:00:00', 3, 4000.00, 27),
 ('Film Festival', 'A week-long festival celebrating independent and international films.', '2023-10-10 09:00:00', '2023-10-17 23:00:00', 4, 8000.00, 28),
 ('Classic Cinema Weekend', 'A celebration of classic films from the golden age of cinema.', '2023-09-15 12:00:00', '2023-09-17 22:00:00', 5, 2500.00, 29);
-
-
-select * from events
-
-
-
-
