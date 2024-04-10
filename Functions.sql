@@ -45,8 +45,7 @@ BEGIN
 END;
 GO
 DECLARE @movieID INT = 1; 
-SELECT dbo.GetRevenueByMovieID(@movieID) AS Revenue_For_Movie_1;
-GO
+SELECT dbo.GetRevenueByMovieID(@movieID) AS Revenue_For_Movie;
  
 
 

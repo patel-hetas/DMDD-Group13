@@ -293,17 +293,17 @@ INSERT INTO schedules (movie_id, studio_id, start_time, end_time, price) VALUES
 (10, 5, '2023-10-14 15:00:00', '2023-10-14 17:40:00', 14.00);
 
 
-INSERT INTO tickets (schedule_id, seat_id, user_id, ticket_status, payment_id) VALUES
-(1, 1, 5, 'Booked', 1),
-(1, 2, 6, 'Booked', 2),
-(2, 11,7, 'Cancelled', NULL),
-(2, 12, 8, 'Booked', 3),
-(3, 21, 9, 'Available', NULL),
-(3, 22, 10, 'Booked', 4),
-(4, 31, 11, 'Cancelled', NULL),
-(4, 32, 12, 'Booked', 5),
-(5, 41, 13, 'Available', NULL),
-(5, 42, 14, 'Booked', 6);
+-- INSERT INTO tickets (schedule_id, seat_id, user_id, ticket_status, payment_id) VALUES
+-- (1, 1, 5, 'Booked', 1),
+-- (1, 2, 6, 'Booked', 2),
+-- (2, 11,7, 'Cancelled', NULL),
+-- (2, 12, 8, 'Booked', 3),
+-- (3, 21, 9, 'Available', NULL),
+-- (3, 22, 10, 'Booked', 4),
+-- (4, 31, 11, 'Cancelled', NULL),
+-- (4, 32, 12, 'Booked', 5),
+-- (5, 41, 13, 'Available', NULL),
+-- (5, 42, 14, 'Booked', 6);
 
 
 

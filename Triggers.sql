@@ -1,42 +1,107 @@
--- Generate Tickets Once a Movie Schedule is Released
-DROP TRIGGER IF EXISTS trg_createTicketWhenScheduleIsCreated;
-GO
-CREATE TRIGGER trg_createTicketWhenScheduleIsCreated
+CREATE TRIGGER trg_GenerateTicketsOnNewSchedule
 ON schedules
 AFTER INSERT
 AS
 BEGIN
-    DECLARE @schedule_id INT;
+    DECLARE @new_schedule_id INT;
     DECLARE @studio_id INT;
-    DECLARE @seat_id INT;
-    DECLARE @user_id INT;
-    DECLARE @ticket_id INT;
 
-    SELECT @schedule_id = schedule_id, @studio_id = studio_id
-    FROM inserted;
+    -- Get the ID of the newly inserted schedule
+    SELECT TOP 1 @new_schedule_id = schedule_id, @studio_id = studio_id
+    FROM schedules
+    WHERE schedule_id IN (SELECT TOP 1 schedule_id FROM inserted);
 
-    INSERT INTO tickets (schedule_id, seat_id, user_id, ticket_status)
-    SELECT @schedule_id, seat_id, NULL, 'Available'
-    FROM seats
-    WHERE studio_id = @studio_id;
+    -- Generate tickets for each seat in the studio associated with the new schedule
+    INSERT INTO tickets (schedule_id, seat_id, user_id, ticket_status, payment_id)
+    SELECT 
+        @new_schedule_id AS schedule_id,
+        s.seat_id,
+        NULL AS user_id,
+        'Available' AS ticket_status,
+        NULL AS payment_id
+    FROM 
+        seats s
+    WHERE 
+        s.studio_id = @studio_id;
+
+    -- Additional actions can be performed here, such as sending notifications or updating other tables
 END;
 GO
 
--- Cancel Tickets Once a Movie Schedule is Deleted
-DROP TRIGGER IF EXISTS trg_cancelTicketWhenScheduleIsDeleted;
+-- Update Seat Availability When Ticket is Cancelled
+CREATE TRIGGER trg_UpdateSeatAvailabilityOnTicketCancelled
+ON tickets
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF UPDATE(ticket_status)
+    BEGIN
+        -- Assuming there is an 'is_available' column in the 'seats' table.
+        UPDATE seats
+        SET is_available = 1
+        WHERE seat_id IN (SELECT seat_id FROM inserted WHERE ticket_status = 'Cancelled');
+    END
+END;
 GO
-CREATE TRIGGER trg_cancelTicketWhenScheduleIsDeleted
-ON schedules
-AFTER DELETE
+
+
+
+-- Trigger for Updating Event Revenue
+CREATE TRIGGER tr_update_event_revenue
+ON transactions
+AFTER INSERT
+FOR EACH ROW
 AS
 BEGIN
     DECLARE @schedule_id INT;
+    DECLARE @event_id INT;
 
-    SELECT @schedule_id = schedule_id
-    FROM deleted;
+    SELECT 
+        @schedule_id = inserted.schedule_id
+    FROM 
+        inserted;
 
-    UPDATE tickets
-    SET ticket_status = 'Cancelled'
-    WHERE schedule_id = @schedule_id;
+    SELECT 
+        @event_id = e.event_id
+    FROM 
+        schedules s
+    JOIN 
+        events e ON s.studio_id = e.studio_id
+    WHERE 
+        s.schedule_id = @schedule_id;
+
+    IF @event_id IS NOT NULL
+    BEGIN
+        DECLARE @revenue FLOAT;
+
+        SELECT @revenue = SUM(amount)
+        FROM transactions
+        WHERE payment_id = inserted.payment_id;
+
+        UPDATE events
+        SET event_revenue = event_revenue + @revenue
+        WHERE event_id = @event_id;
+    END;
 END;
+GO
+
+
+
+CREATE TRIGGER tr_remove_expired_event_tickets
+ON events 
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    -- Delete tickets associated with expired schedules
+    DELETE
+    FROM tickets 
+    WHERE schedule_id IN(SELECT s.schedule_id
+    FROM
+        inserted AS i
+        INNER JOIN schedules AS s
+        ON i.studio_id = s.studio_id
+    WHERE s.end_time < GETDATE()     );
+END
 GO
