@@ -106,6 +106,22 @@ BEGIN
 END;
 GO
 
+DROP PROCEDURE IF EXISTS sp_createStudio;
+GO
+CREATE PROCEDURE sp_createStudio -- Create Studio
+    @name VARCHAR(50),
+    @screen_type VARCHAR(10),
+    @studio_id INT OUTPUT
+AS
+BEGIN
+    INSERT INTO studios (studio_name, screen_type)
+    VALUES (@name, @screen_type);
+
+    SET @studio_id = SCOPE_IDENTITY();
+END;
+GO
+
+
 -- Procedure to create a new transaction
 DROP PROCEDURE IF EXISTS CreateTransaction
 GO
