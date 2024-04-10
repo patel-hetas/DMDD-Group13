@@ -3,10 +3,10 @@ DROP FUNCTION IF EXISTS fn_getEncryptedPassword;
 GO
 CREATE FUNCTION fn_getEncryptedPassword -- Get Encrypted Password
     (@password_not_encrypted VARCHAR(50))
-RETURNS VARBINARY
+RETURNS VARBINARY(512)
 AS
 BEGIN
-    DECLARE @password_encrypted VARBINARY;
+    DECLARE @password_encrypted VARBINARY(512);
     SET @password_encrypted = ENCRYPTBYKEY(KEY_GUID('UserPasswordKey'), @password_not_encrypted);
     RETURN @password_encrypted;
 END;
