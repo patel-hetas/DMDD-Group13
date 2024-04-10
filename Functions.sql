@@ -46,6 +46,7 @@ END;
 GO
 DECLARE @movieID INT = 1; 
 SELECT dbo.GetRevenueByMovieID(@movieID) AS Revenue_For_Movie_1;
+GO
  
 
 
@@ -68,9 +69,11 @@ BEGIN
         RETURN 0
     RETURN CAST(@OccupiedSeats AS FLOAT) / CAST(@TotalSeats AS FLOAT)
 END
+GO
 
 DECLARE @movieID INT = 1; 
 SELECT dbo.CalculateSeatOccupancyRate(@movieID) AS Occupancy_Rate_For_Movie_1;
+GO
 
 
 -- UDF to calculate age based on DOB
@@ -84,9 +87,11 @@ BEGIN
     RETURN DATEDIFF(YEAR, @BirthDate, GETDATE()) - 
            CASE WHEN DATEADD(YEAR, DATEDIFF(YEAR, @BirthDate, GETDATE()), @BirthDate) > GETDATE() THEN 1 ELSE 0 END;
 END;
+GO
 
 DECLARE @birthDate DATE = '1990-04-09';
 SELECT dbo.CalculateAge(@birthDate) AS Age;
+GO
 
 
 --  Calculate average duartion of movies watched by user 
@@ -102,9 +107,11 @@ BEGIN
     WHERE tickets.user_id = @UserID AND tickets.ticket_status = 'Booked'
     RETURN ISNULL(@AverageDuration, 0)
 END
+GO
 
 DECLARE @userID INT = 5; 
 SELECT dbo.GetAverageMovieDurationByUser(@userID) AS AverageMovieDuration;
+GO
 
 -- UDF to get review category
 CREATE FUNCTION GetReviewCategory(@rating INT)
@@ -121,9 +128,11 @@ BEGIN
 END;
 RETURN @category
 END;
+GO
 
 DECLARE @rating INT = 4; 
 SELECT dbo.GetReviewCategory(@rating) AS ReviewCategory;
+GO
  
 -- UDF to calculate move duration
 CREATE FUNCTION GetScheduleDuration (@StartTime DATETIME, @EndTime DATETIME)
